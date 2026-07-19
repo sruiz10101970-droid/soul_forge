@@ -1,0 +1,39 @@
+# Soulforge
+
+A single-file, browser-based RPG character builder and combat simulator with a dark medieval theme. Everything runs locally in the browser — no server, no build step, no dependencies.
+
+## Features
+
+- **Point-buy stat system** — six stats (Willpower, Strength, Speed, Fortitude, Energy, Soul) with automatic score multipliers (+1 per 5 points past the floor).
+- **Multi-character roster** — create, switch, hide, and delete characters. Everything saves to localStorage.
+- **Vitals** — HP scales with Fortitude (+30 per point), Energy scales with Energy (+20 per point). Track current vs. max, apply damage and healing.
+- **Combat wheel** — proportional hit-chance model based on effective attacker vs. defender stats, with auto-damage on hit.
+- **Manual dice roller** — d4/d6/d8/d10/d12/d20, count and flat modifier, optional stat bonus, crit/fumble on single d20.
+- **Weapons** — inventory slots can be marked as weapons with bonus dice (+Nd?) and per-stat multipliers. One equipped at a time.
+- **Armor** — 4 slots (Head/Body/Arms/Legs) with independent weight and defense. Weight drives Speed penalty (offset by Strength: every 2 Str cancels 1 weight). Defense reduces incoming damage. Per-damage-type resistances (piercing, slashing, bludgeoning, fire, cold, poison, bleeding, psychic) stack up to 90%.
+- **Clans** — shared clan list with per-stat multipliers, edited per active character.
+- **Abilities** — per-character abilities with a stat multiplier (affects checked stats) and a damage multiplier (scales the whole roll). One active at a time.
+- **Damage scaling** — total combined stats add +0.3 to the damage-roll multiplier per 5 points.
+- **Currency** — per-character wallet in copper/silver/gold sheckles (1G = 10S = 1000C).
+- **Wipe wheel** — randomly generate Soul / Race / Clan from editable lists.
+- **Tier badges** — House / Block / City / Mountain / Continental / Planetary power tier next to each character's name.
+
+## Running it
+
+Just open `soulforge.html` in any modern browser. There's no install step. All data is saved to your browser's localStorage, so it stays between sessions on the same browser.
+
+## Tech
+
+- Vanilla HTML/CSS/JavaScript in a single file
+- No build tools, no dependencies
+- Fonts loaded from Google Fonts (Cinzel, Cormorant Garamond, IM Fell English SC)
+- Uses localStorage for persistence
+
+## Project structure
+
+```
+soulforge/
+├── soulforge.html    # The whole app
+├── README.md
+└── .gitignore
+```
