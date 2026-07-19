@@ -1,0 +1,3167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Soulforge — Build Your Champion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15110b;
+    --bg-2: #0d0a06;
+    --panel: #1f1a12;
+    --panel-edge: #4a3a22;
+    --text: #ece2c8;
+    --text-dim: #9c8b6a;
+    --accent: #d24a2f;
+    --accent-2: #d9a64a;
+    --hp: #c8392a;
+    --energy: #d9a64a;
+    --ok: #8fbf4a;
+    --warn: #d97a3a;
+    --glow: 0 2px 12px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background-color: #0a0805;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(80, 30, 12, 0.45), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(120, 80, 30, 0.25), transparent 55%),
+      radial-gradient(circle at 20% 70%, rgba(70, 30, 8, 0.35), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(40, 20, 5, 0.4), transparent 45%);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 19px;
+  }
+  body::before {
+    content:''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      repeating-linear-gradient(43deg, rgba(255,220,160,0.02) 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(137deg, rgba(255,220,160,0.015) 0 1px, transparent 1px 5px);
+    mix-blend-mode: screen;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1040px; margin: 0 auto; padding: 40px 20px 70px; }
+
+  header { text-align: center; margin-bottom: 30px; }
+  header h1 {
+    font-family: 'Cinzel', serif; font-weight: 900; font-size: clamp(34px, 6vw, 56px);
+    margin: 0; letter-spacing: 0.05em;
+    color: var(--accent);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5), 0 0 24px rgba(210,74,47,0.35);
+  }
+  header p { color: var(--text-dim); letter-spacing: 0.3em; text-transform: uppercase; font-size: 13px; margin-top: 8px; font-family: 'IM Fell English SC', serif; }
+
+  .layout { display: grid; grid-template-columns: 1.45fr 1fr; gap: 22px; }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-2));
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: inset 0 1px 0 rgba(255,235,180,0.08), 0 14px 34px -18px rgba(0,0,0,0.6);
+  }
+
+  .panel h2 {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 18px;
+    margin: 0 0 4px; letter-spacing: 0.08em; color: var(--text);
+  }
+  .panel .hint { color: var(--text-dim); font-size: 14px; margin: 0 0 18px; }
+
+  /* Point pool */
+  .pool {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 10px;
+    padding: 12px 18px; margin-bottom: 20px;
+  }
+  .pool .pool-label { color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.2em; font-size: 13px; }
+  .pool .pool-num {
+    font-weight: 700; font-size: 30px; color: var(--accent);
+    text-shadow: var(--glow) rgba(122,31,21,0.28); transition: color 0.2s, text-shadow 0.2s;
+  }
+  .pool .pool-num.empty { color: var(--warn); text-shadow: var(--glow) rgba(255,138,77,0.4); }
+
+  /* Stat rows */
+  .stat { margin-bottom: 16px; }
+  .stat-top { display: flex; align-items: center; gap: 12px; margin-bottom: 7px; }
+  .stat-name { width: 116px; flex-shrink: 0; font-weight: 600; letter-spacing: 0.04em; }
+  .stat-name small { display: block; color: var(--text-dim); font-weight: 400; font-size: 12px; letter-spacing: 0.06em; }
+  .stepper { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .stepper button {
+    width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+    background: var(--bg); color: var(--text); border: 1px solid var(--panel-edge);
+    font-size: 18px; font-weight: 700; line-height: 1; transition: all 0.15s;
+  }
+  .stepper button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); box-shadow: var(--glow) rgba(122,31,21,0.18); }
+  .stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .stat-score { width: 38px; text-align: center; font-weight: 700; font-size: 22px; }
+  .stat-mod {
+    min-width: 46px; text-align: center; font-weight: 700; font-size: 14px;
+    color: var(--bg); background: var(--accent); border-radius: 999px; padding: 3px 0;
+  }
+  .stat-mod.neg { background: var(--warn); }
+
+  .stat-mult {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 8px;
+    padding: 3px 8px;
+  }
+  .stat-mult .x { color: var(--accent-2); font-weight: 700; font-size: 14px; }
+  .stat-mult input {
+    width: 46px; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: inherit; font-weight: 700; font-size: 15px; text-align: center;
+    cursor: default; pointer-events: none;
+    -moz-appearance: textfield;
+  }
+  .stat-mult input::-webkit-inner-spin-button, .stat-mult input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .stat-eff {
+    min-width: 52px; text-align: right; font-weight: 700; font-size: 15px;
+    color: var(--accent-2); text-shadow: var(--glow) rgba(160,122,43,0.25);
+  }
+
+  .stat-bar { height: 8px; border-radius: 999px; background: rgba(255,235,180,0.07); overflow: hidden; }
+  .stat-bar > span {
+    display: block; height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow: var(--glow) rgba(122,31,21,0.25); transition: width 0.35s cubic-bezier(.2,.8,.2,1);
+  }
+
+  /* Right column */
+  .id-fields { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; }
+  .id-fields label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; }
+  .id-fields input, .id-fields select {
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 8px;
+    color: var(--text); font-family: inherit; font-size: 17px; padding: 9px 12px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .id-fields input:focus, .id-fields select:focus { border-color: var(--accent); box-shadow: var(--glow) rgba(122,31,21,0.18); }
+
+  .vital { margin-bottom: 16px; }
+  .vital-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .vital-head .v-name { text-transform: uppercase; letter-spacing: 0.16em; font-size: 13px; color: var(--text-dim); }
+  .vital-head .v-num { font-weight: 700; font-size: 18px; }
+  .vbar { height: 16px; border-radius: 999px; background: rgba(255,235,180,0.07); border: 1px solid var(--panel-edge); overflow: hidden; }
+  .vbar > span { display: block; height: 100%; border-radius: 999px; transition: width 0.4s cubic-bezier(.2,.8,.2,1); }
+  .vbar.hp > span { background: linear-gradient(90deg, #a83226, var(--hp)); box-shadow: var(--glow) rgba(138,32,23,0.3); }
+  .vbar.en > span { background: linear-gradient(90deg, #d4a23a, var(--energy)); box-shadow: var(--glow) rgba(184,133,31,0.3); }
+
+  .vital-controls { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .vital-controls input {
+    width: 56px; background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 8px;
+    color: var(--text); font-family: inherit; font-size: 15px; padding: 6px 8px; text-align: center; outline: none;
+    -moz-appearance: textfield;
+  }
+  .vital-controls input::-webkit-inner-spin-button, .vital-controls input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .vital-controls button {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 13px; letter-spacing: 0.04em;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 8px;
+    color: var(--text); padding: 6px 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .vital-controls button.dmg { border-color: var(--hp); color: var(--hp); }
+  .vital-controls button.dmg:hover { background: var(--hp); color: #f3e6c8; }
+  .vital-controls button.heal { border-color: var(--ok); color: var(--ok); }
+  .vital-controls button.heal:hover { background: var(--ok); color: #f3e6c8; }
+  .vital-controls button.full { margin-left: auto; }
+  .vital-controls button.full:hover { border-color: var(--accent); color: var(--accent); }
+
+  .derived { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .derived .d-card { background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 10px; padding: 12px 14px; }
+  .derived .d-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.14em; }
+  .derived .d-val { font-weight: 700; font-size: 26px; margin-top: 2px; }
+  .derived .d-val.glow { color: var(--accent); text-shadow: var(--glow) rgba(122,31,21,0.25); }
+
+  .archetype {
+    margin-top: 20px; padding: 14px 16px; border-radius: 10px;
+    background: linear-gradient(90deg, rgba(122,31,21,0.06), rgba(160,122,43,0.07));
+    border: 1px solid var(--panel-edge);
+  }
+  .archetype .a-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.16em; }
+  .archetype .a-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 22px; margin-top: 3px; }
+  .archetype .a-desc { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+
+  .actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .actions button {
+    flex: 1; min-width: 120px; font-family: 'Cinzel', serif; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; padding: 12px;
+    border-radius: 9px; cursor: pointer; transition: all 0.18s; border: 1px solid var(--panel-edge);
+    background: var(--bg); color: var(--text);
+  }
+  .actions button:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--glow) rgba(122,31,21,0.22); }
+  .actions button.primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--bg); border: none; }
+  .actions button.primary:hover { filter: brightness(1.1); box-shadow: var(--glow) rgba(122,31,21,0.3); }
+
+  .flash { text-align: center; color: var(--ok); margin-top: 12px; height: 18px; opacity: 0; transition: opacity 0.3s; letter-spacing: 0.1em; font-size: 14px; }
+  .flash.show { opacity: 1; }
+
+  /* Roster */
+  .roster {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: linear-gradient(180deg, var(--panel), var(--bg-2));
+    border: 1px solid var(--panel-edge); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 22px;
+  }
+  .roster .roster-label {
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.1em;
+    color: var(--text-dim); text-transform: uppercase; margin-right: 4px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 999px;
+    padding: 7px 8px 7px 14px; cursor: pointer; transition: all 0.15s; font-weight: 600;
+    color: var(--text); font-size: 15px;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active {
+    border-color: var(--accent); color: var(--accent);
+    box-shadow: var(--glow) rgba(122,31,21,0.22);
+    background: linear-gradient(90deg, rgba(122,31,21,0.08), rgba(160,122,43,0.09));
+  }
+  .chip .chip-x {
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--hp); background: rgba(138,32,23,0.1); color: var(--hp);
+    font-size: 17px; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+    transition: all 0.15s;
+  }
+  .chip .chip-x:hover { background: var(--hp); color: #f3e6c8; box-shadow: var(--glow) rgba(138,32,23,0.4); }
+  .chip .chip-hide {
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--panel-edge); background: var(--bg); color: var(--text-dim);
+    font-size: 13px; line-height: 1; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .chip .chip-hide:hover { border-color: var(--accent-2); color: var(--accent-2); }
+  .hidden-link {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--accent-2); font-family: 'IM Fell English SC', serif; font-size: 13px;
+    letter-spacing: 0.1em; padding: 4px 10px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .hidden-link:hover { color: var(--accent); }
+
+  /* Hidden roster modal reuses wipe-overlay pattern */
+  .hidden-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+  .hidden-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 9px;
+    padding: 8px 12px;
+  }
+  .hidden-row .h-name { flex: 1; font-family: 'Cinzel', serif; font-weight: 600; color: var(--text); }
+  .hidden-row .h-meta { font-size: 12px; color: var(--text-dim); }
+  .hidden-row button {
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px; letter-spacing: 0.06em;
+    background: var(--bg); border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 7px; padding: 5px 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .hidden-row button:hover { background: var(--accent); color: #f3e6c8; }
+  .hidden-empty { text-align: center; color: var(--text-dim); font-style: italic; padding: 16px 8px; }
+  .chip-new {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--bg);
+    border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+    font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.08em; font-size: 14px;
+    transition: filter 0.15s;
+  }
+  .chip-new:hover { filter: brightness(1.1); box-shadow: var(--glow) rgba(122,31,21,0.25); }
+
+  /* Inventory grid */
+  .inv-wrap { margin-top: 20px; }
+  .inv-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .inv-title { font-family: 'IM Fell English SC', serif; font-size: 14px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; }
+  .inv-add {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; letter-spacing: 0.04em;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 8px;
+    color: var(--text); padding: 5px 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .inv-add:hover { border-color: var(--accent); color: var(--accent); }
+  .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .inv-slot {
+    position: relative; aspect-ratio: 1; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--panel-edge); background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 6px;
+    text-align: center; transition: all 0.15s; overflow: hidden;
+  }
+  .inv-slot:hover { border-color: var(--accent); box-shadow: var(--glow) rgba(122,31,21,0.2); }
+  .inv-slot.empty { border-style: dashed; color: var(--text-dim); }
+  .inv-slot.empty::before { content: '+'; font-size: 26px; font-weight: 700; opacity: 0.4; }
+  .inv-slot.filled {
+    background: linear-gradient(180deg, rgba(160,122,43,0.12), rgba(122,31,21,0.06));
+    border-color: var(--accent-2);
+  }
+  .inv-slot .inv-name {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 15px;
+    line-height: 1.15; color: var(--text); word-break: break-word;
+  }
+  .inv-slot .inv-qty {
+    position: absolute; bottom: 4px; right: 6px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px;
+    background: var(--accent); color: #f3e6c8; border-radius: 999px; padding: 1px 7px;
+  }
+  .inv-slot.weapon { border-color: var(--accent-2); }
+  .inv-slot.weapon::after {
+    content: '⚔'; position: absolute; top: 4px; left: 6px;
+    font-size: 14px; color: var(--accent-2); opacity: 0.85;
+  }
+  .inv-slot.equipped {
+    border-color: var(--accent); border-width: 2px;
+    box-shadow: var(--glow) rgba(122,31,21,0.3) inset, 0 0 0 1px rgba(122,31,21,0.2);
+  }
+  .inv-slot .inv-dice {
+    position: absolute; top: 4px; right: 6px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 11px; letter-spacing: 0.04em;
+    background: var(--accent-2); color: #f3e6c8; border-radius: 6px; padding: 1px 6px;
+  }
+  .inv-slot .equip-btn {
+    position: absolute; bottom: 4px; left: 6px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 10px; letter-spacing: 0.06em;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 6px;
+    color: var(--text); padding: 2px 7px; cursor: pointer;
+  }
+  .inv-slot .equip-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .inv-slot.equipped .equip-btn { background: var(--accent); color: #f3e6c8; border-color: var(--accent); }
+
+  /* Combat / dice */
+  .combat-panel { margin-top: 22px; }
+  .dice-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .die-btn {
+    flex: 1; min-width: 76px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 17px;
+    background: var(--bg); color: var(--text); border: 1px solid var(--panel-edge);
+    border-radius: 10px; padding: 14px 0; cursor: pointer; transition: all 0.15s;
+  }
+  .die-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--glow) rgba(122,31,21,0.22); }
+  .die-btn:active { transform: scale(0.96); }
+
+  .roll-config { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .roll-config label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-dim); }
+  .roll-config select, .roll-config input {
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 8px;
+    color: var(--text); font-family: inherit; font-size: 15px; padding: 7px 10px; outline: none;
+  }
+  .roll-config input[type="number"] { width: 64px; }
+
+  .roll-result {
+    text-align: center; border: 1px solid var(--panel-edge); border-radius: 12px;
+    background: var(--bg); padding: 22px 16px; min-height: 96px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .roll-total {
+    font-family: 'Cinzel', serif; font-weight: 800; font-size: 52px; line-height: 1;
+    color: var(--accent); text-shadow: var(--glow) rgba(122,31,21,0.28);
+    transition: transform 0.12s;
+  }
+  .roll-total.crit { color: var(--ok); text-shadow: var(--glow) rgba(76,107,31,0.3); }
+  .roll-total.fumble { color: var(--hp); text-shadow: var(--glow) rgba(138,32,23,0.35); }
+  .roll-total.pop { transform: scale(1.18); }
+  .roll-detail { color: var(--text-dim); font-size: 15px; letter-spacing: 0.04em; }
+  .roll-label { color: var(--text-dim); font-size: 13px; text-transform: uppercase; letter-spacing: 0.18em; }
+
+  /* Hit wheel */
+  .wheel-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--panel-edge); }
+  .wheel-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; justify-content: center; }
+  .wheel-stage { position: relative; width: 200px; height: 200px; flex-shrink: 0; }
+  .wheel-pointer {
+    position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent;
+    border-top: 20px solid var(--text); z-index: 2;
+    filter: drop-shadow(0 1px 1px rgba(60,30,5,0.4));
+  }
+  #wheel-svg { display: block; transition: transform 3.6s cubic-bezier(.17,.67,.16,1); }
+  .wheel-info { min-width: 180px; }
+  .wheel-info .wi-label { font-family: 'IM Fell English SC', serif; font-size: 13px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; }
+  .wheel-info .wi-chance { font-family: 'Cinzel', serif; font-weight: 800; font-size: 34px; color: var(--accent-2); margin: 2px 0 12px; }
+  .wheel-info .wi-outcome { font-family: 'Cinzel', serif; font-weight: 800; font-size: 30px; min-height: 38px; }
+  .wheel-info .wi-outcome.hit { color: var(--ok); }
+  .wheel-info .wi-outcome.miss { color: var(--hp); }
+  .wheel-info .wi-note { color: var(--text-dim); font-size: 14px; margin-top: 6px; min-height: 20px; }
+  .wheel-controls { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .wheel-controls label { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--text-dim); cursor: pointer; }
+  .spin-btn {
+    font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.06em; font-size: 15px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #f3e6c8;
+    border: none; border-radius: 9px; padding: 11px 22px; cursor: pointer; transition: filter 0.15s;
+  }
+  .spin-btn:hover { filter: brightness(1.08); }
+  .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Wipe modal */
+  .wipe-overlay {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    background: rgba(43, 29, 14, 0.7);
+    align-items: center; justify-content: center;
+  }
+  .wipe-overlay.open { display: flex; }
+  .wipe-modal {
+    background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 14px;
+    padding: 28px 32px; max-width: 700px; width: calc(100% - 32px);
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.75);
+  }
+  .wipe-modal h2 {
+    font-family: 'Cinzel', serif; font-weight: 800; font-size: 26px; margin: 0 0 6px;
+    color: var(--accent); text-align: center; letter-spacing: 0.06em;
+  }
+  .wipe-modal .wipe-sub { text-align: center; color: var(--text-dim); font-style: italic; margin: 0 0 22px; }
+  .wipe-wheels { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .wipe-wheel { text-align: center; }
+  .wipe-wheel .ww-label { font-family: 'IM Fell English SC', serif; font-size: 14px; letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+  .wipe-wheel .ww-stage { position: relative; width: 200px; height: 200px; margin: 0 auto; }
+  .wipe-wheel .ww-stage svg { display: block; transition: transform 3.6s cubic-bezier(.17,.67,.16,1); }
+  .wipe-wheel .ww-pointer {
+    position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent;
+    border-top: 20px solid var(--text); z-index: 2;
+    filter: drop-shadow(0 1px 1px rgba(60,30,5,0.4));
+  }
+  .wipe-wheel .ww-result {
+    margin-top: 12px; font-family: 'Cinzel', serif; font-weight: 700; font-size: 22px; color: var(--accent-2);
+    min-height: 30px;
+  }
+  .wipe-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .wipe-actions button {
+    font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.1em; font-size: 13px;
+    text-transform: uppercase; padding: 11px 18px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--panel-edge); background: var(--bg); color: var(--text); transition: all 0.15s;
+  }
+  .wipe-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .wipe-actions button.primary {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #f3e6c8; border: none;
+  }
+  .wipe-actions button.primary:hover { filter: brightness(1.08); }
+  .wipe-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Wheel option editor */
+  .ww-edit {
+    margin-top: 12px; padding: 10px 12px; background: var(--bg);
+    border: 1px solid var(--panel-edge); border-radius: 10px;
+    max-width: 240px; margin-left: auto; margin-right: auto;
+  }
+  .ww-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; justify-content: center; }
+  .ww-chips:empty { display: none; }
+  .ww-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 999px;
+    padding: 3px 4px 3px 10px; font-size: 13px; color: var(--text);
+  }
+  .ww-chip button {
+    width: 18px; height: 18px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,235,180,0.07); color: var(--text-dim);
+    font-size: 13px; line-height: 1; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ww-chip button:hover { background: var(--hp); color: #f3e6c8; }
+  .ww-add { display: flex; gap: 5px; }
+  .ww-add input {
+    flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--panel-edge);
+    border-radius: 7px; padding: 5px 8px; color: var(--text); font-family: inherit; font-size: 13px;
+    outline: none;
+  }
+  .ww-add input:focus { border-color: var(--accent); }
+  .ww-add button {
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 7px;
+    color: var(--text); padding: 5px 11px; cursor: pointer; font-family: 'Cinzel', serif;
+    font-size: 12px; font-weight: 700;
+  }
+  .ww-add button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Clans editor */
+  .clans-panel { margin-top: 22px; }
+  .clans-empty { text-align: center; color: var(--text-dim); font-style: italic; padding: 18px 8px; }
+  .clan-card {
+    border: 1px solid var(--panel-edge); border-radius: 10px; background: var(--bg);
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .clan-card-head {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 17px; color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .clan-card-head .reset-mods {
+    margin-left: auto;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em;
+    background: transparent; border: 1px solid var(--panel-edge); border-radius: 7px;
+    color: var(--text-dim); padding: 4px 9px; cursor: pointer;
+  }
+  .clan-card-head .reset-mods:hover { border-color: var(--accent); color: var(--accent); }
+  .clan-mods {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;
+  }
+  .clan-mod {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 7px;
+    padding: 5px 8px;
+  }
+  .clan-mod .cm-name { font-size: 13px; color: var(--text-dim); flex: 1; }
+  .clan-mod .cm-x { font-weight: 700; color: var(--accent-2); font-size: 13px; }
+  .clan-mod input {
+    width: 52px; background: transparent; border: 1px dotted var(--text-dim); border-radius: 5px;
+    color: var(--text); font-family: inherit; font-weight: 700; font-size: 14px;
+    text-align: center; outline: none; -moz-appearance: textfield;
+  }
+  .clan-mod input:focus { border-style: solid; border-color: var(--accent); }
+  .clan-mod input::-webkit-inner-spin-button, .clan-mod input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* Equipped-weapon multipliers panel under the inventory */
+  .weap-card {
+    margin-top: 14px;
+    border: 1px solid var(--panel-edge); border-radius: 10px; background: var(--bg);
+    padding: 12px 14px;
+  }
+  .weap-card-head {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 15px; color: var(--accent-2);
+    margin-bottom: 8px;
+  }
+  .weap-card-head .swords { color: var(--accent-2); font-size: 18px; }
+  .weap-card-head .reset-mods {
+    margin-left: auto;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em;
+    background: transparent; border: 1px solid var(--panel-edge); border-radius: 7px;
+    color: var(--text-dim); padding: 4px 9px; cursor: pointer;
+  }
+  .weap-card-head .reset-mods:hover { border-color: var(--accent); color: var(--accent); }
+  .weap-empty { text-align: center; color: var(--text-dim); font-style: italic; font-size: 13px; padding: 10px 6px; }
+
+  /* Tier badge */
+  .tier-badge {
+    display: inline-flex; align-items: center;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+    color: #f3e6c8; border: 1px solid transparent;
+    box-shadow: var(--glow) rgba(0,0,0,0.35);
+    white-space: nowrap; line-height: 1;
+  }
+  .tier-house       { background: linear-gradient(90deg, #4a3a22, #6b5230); }
+  .tier-block       { background: linear-gradient(90deg, #6b5230, #9c8b6a); }
+  .tier-city        { background: linear-gradient(90deg, #b89a63, #d9a64a); color: #2b1d0e; }
+  .tier-mountain    { background: linear-gradient(90deg, #7a4a2a, #c8392a); }
+  .tier-continental { background: linear-gradient(90deg, #4a3a72, #8a6bd9); }
+  .tier-planetary   { background: linear-gradient(135deg, #2b1d6e, #d24a2f, #d9a64a); }
+
+  /* Abilities */
+  .abil-wrap { margin-top: 20px; }
+  .abil-empty { text-align: center; color: var(--text-dim); font-style: italic; padding: 14px 8px; }
+  .abil-card {
+    border: 1px solid var(--panel-edge); border-radius: 10px; background: var(--bg);
+    padding: 12px 14px; margin-bottom: 10px; transition: all 0.15s;
+  }
+  .abil-card.active {
+    border-color: var(--accent);
+    box-shadow: var(--glow) rgba(122,31,21,0.25), 0 0 0 1px rgba(122,31,21,0.15) inset;
+  }
+  .abil-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .abil-head input.abil-name {
+    flex: 1; min-width: 130px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 15px; color: var(--text);
+    background: transparent; border: 1px dotted var(--text-dim); border-radius: 6px;
+    padding: 4px 8px; outline: none;
+  }
+  .abil-head input.abil-name:focus { border-style: solid; border-color: var(--accent); }
+  .abil-head .abil-mult {
+    display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid var(--panel-edge); border-radius: 7px; padding: 3px 8px; background: var(--panel);
+  }
+  .abil-head .abil-mult .abm-x { color: var(--accent-2); font-weight: 700; font-size: 13px; }
+  .abil-head .abil-mult .abm-lbl {
+    font-family: 'IM Fell English SC', serif; font-size: 10px; letter-spacing: 0.12em;
+    color: var(--text-dim); margin-right: 2px;
+  }
+  .abil-head .abil-mult input {
+    width: 48px; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: inherit; font-weight: 700; font-size: 14px; text-align: center;
+    -moz-appearance: textfield;
+  }
+  .abil-head .abil-mult input::-webkit-inner-spin-button, .abil-head .abil-mult input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .abil-head .abil-active-btn {
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 7px;
+    color: var(--text); padding: 5px 11px; cursor: pointer; transition: all 0.15s;
+  }
+  .abil-head .abil-active-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .abil-card.active .abil-active-btn { background: var(--accent); color: #f3e6c8; border-color: var(--accent); }
+  .abil-head .abil-del {
+    width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--panel-edge);
+    background: var(--bg); color: var(--text-dim); font-size: 15px; line-height: 1;
+    cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .abil-head .abil-del:hover { border-color: var(--hp); color: var(--hp); }
+  .abil-stats {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .abil-stat {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 999px;
+    padding: 4px 10px 4px 8px; cursor: pointer; user-select: none; font-size: 13px;
+  }
+  .abil-stat input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+  .abil-stat.checked { border-color: var(--accent); color: var(--accent); }
+
+  /* Wallet */
+  .wallet-wrap { margin-top: 20px; }
+  .wallet-total {
+    display: flex; justify-content: center; gap: 22px; padding: 14px 10px;
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .wallet-total .wt-piece {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 26px;
+  }
+  .wallet-total .wt-piece b { color: var(--text); font-weight: 700; }
+  .wallet-total .wt-lbl {
+    font-family: 'IM Fell English SC', serif; font-size: 13px; letter-spacing: 0.14em;
+    padding: 2px 8px; border-radius: 6px; color: #f3e6c8;
+    box-shadow: var(--glow) rgba(0,0,0,0.35);
+  }
+  .wallet-total .wt-lbl.gold   { background: linear-gradient(90deg, #b89a63, #d9a64a); color: #2b1d0e; }
+  .wallet-total .wt-lbl.silver { background: linear-gradient(90deg, #6b6b6b, #b0b0b0); color: #1a1a1a; }
+  .wallet-total .wt-lbl.copper { background: linear-gradient(90deg, #7a4a2a, #c8712a); }
+  .wallet-controls { display: flex; flex-direction: column; gap: 10px; }
+  .wallet-controls .wc-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .wallet-controls .wc-row label {
+    flex: 1; min-width: 90px;
+    font-family: 'IM Fell English SC', serif; font-size: 12px; letter-spacing: 0.12em;
+    color: var(--text-dim); display: flex; flex-direction: column; gap: 3px;
+  }
+  .wallet-controls .wc-row input {
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 7px;
+    color: var(--text); font-family: 'Cinzel', serif; font-weight: 700; font-size: 15px;
+    padding: 6px 10px; text-align: center; outline: none;
+    -moz-appearance: textfield;
+  }
+  .wallet-controls .wc-row input::-webkit-inner-spin-button,
+  .wallet-controls .wc-row input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .wallet-controls .wc-row input:focus { border-color: var(--accent); }
+  .wallet-controls .wc-actions { display: flex; gap: 10px; }
+  .wallet-controls .wc-actions button {
+    flex: 1;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 15px; letter-spacing: 0.06em;
+    background: var(--bg); border: 1px solid var(--panel-edge); color: var(--text);
+    border-radius: 8px; padding: 9px 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .wallet-controls .wc-actions .w-take { border-color: var(--hp); color: var(--hp); }
+  .wallet-controls .wc-actions .w-take:hover { background: var(--hp); color: #f3e6c8; }
+  .wallet-controls .wc-actions .w-add.primary {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--bg); border: none;
+  }
+  .wallet-controls .wc-actions .w-add.primary:hover { filter: brightness(1.1); }
+  .wallet-controls .wc-quick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+  .wallet-controls .wc-quick-lbl {
+    font-family: 'IM Fell English SC', serif; font-size: 12px; letter-spacing: 0.14em; color: var(--text-dim);
+  }
+  .wallet-controls .wc-quick button {
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px; letter-spacing: 0.05em;
+    background: var(--bg); border: 1px solid var(--panel-edge); color: var(--text);
+    border-radius: 999px; padding: 4px 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .wallet-controls .wc-quick button:hover { border-color: var(--accent-2); color: var(--accent-2); }
+
+  /* Armor */
+  .armor-wrap { margin-top: 20px; }
+  .armor-totals {
+    font-family: 'IM Fell English SC', serif; font-size: 12px; letter-spacing: 0.1em;
+    color: var(--text-dim); margin-left: auto;
+  }
+  .armor-totals b { color: var(--accent-2); font-weight: 700; }
+  .armor-totals .a-t-hp { color: var(--ok); }
+  .armor-totals .a-t-spd { color: var(--hp); }
+  .armor-slots {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+  }
+  .armor-slot {
+    background: var(--bg); border: 1px solid var(--panel-edge); border-radius: 10px;
+    padding: 10px 12px; transition: all 0.15s;
+  }
+  .armor-slot.equipped { border-color: var(--accent-2); box-shadow: var(--glow) rgba(217,166,74,0.15) inset; }
+  .armor-slot .as-head {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  }
+  .armor-slot .as-slot {
+    font-family: 'IM Fell English SC', serif; font-size: 11px; letter-spacing: 0.14em;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .armor-slot .as-name {
+    flex: 1; background: transparent; border: 1px dotted var(--text-dim); border-radius: 6px;
+    color: var(--text); font-family: 'Cinzel', serif; font-weight: 700; font-size: 14px;
+    padding: 3px 8px; outline: none; min-width: 0;
+  }
+  .armor-slot .as-name:focus { border-style: solid; border-color: var(--accent-2); }
+  .armor-slot .as-clear {
+    width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--panel-edge);
+    background: var(--bg); color: var(--text-dim); font-size: 14px; line-height: 1;
+    cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .armor-slot .as-clear:hover { border-color: var(--hp); color: var(--hp); }
+  .armor-slot .as-weight {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-dim);
+  }
+  .armor-slot .as-weight label { font-family: 'IM Fell English SC', serif; letter-spacing: 0.1em; font-size: 11px; }
+  .armor-slot .as-weight input {
+    width: 56px; background: transparent; border: 1px solid var(--panel-edge); border-radius: 6px;
+    color: var(--text); font-family: 'Cinzel', serif; font-weight: 700; font-size: 14px;
+    padding: 3px 6px; text-align: center; outline: none; -moz-appearance: textfield;
+  }
+  .armor-slot .as-weight input::-webkit-inner-spin-button, .armor-slot .as-weight input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .armor-slot .as-weight input:focus { border-color: var(--accent-2); }
+  .armor-slot .as-effects {
+    margin-top: 6px; font-size: 12px; color: var(--text-dim);
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .armor-slot .as-effects .a-red { color: var(--ok); font-weight: 700; }
+  .armor-slot .as-effects .a-pen { color: var(--hp); font-weight: 700; }
+  .armor-slot .as-defense {
+    display: flex; align-items: center; gap: 8px; margin-top: 4px;
+    font-size: 13px; color: var(--text-dim);
+  }
+  .armor-slot .as-defense label { font-family: 'IM Fell English SC', serif; letter-spacing: 0.1em; font-size: 11px; }
+  .armor-slot .as-defense input {
+    width: 56px; background: transparent; border: 1px solid var(--panel-edge); border-radius: 6px;
+    color: var(--text); font-family: 'Cinzel', serif; font-weight: 700; font-size: 14px;
+    padding: 3px 6px; text-align: center; outline: none; -moz-appearance: textfield;
+  }
+  .armor-slot .as-defense input::-webkit-inner-spin-button, .armor-slot .as-defense input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .armor-slot .as-defense input:focus { border-color: var(--accent-2); }
+  .armor-slot .as-resist-toggle {
+    margin-top: 6px;
+    font-family: 'IM Fell English SC', serif; font-size: 11px; letter-spacing: 0.12em;
+    background: transparent; border: none; color: var(--accent-2);
+    cursor: pointer; padding: 3px 0; text-align: left;
+  }
+  .armor-slot .as-resist-toggle:hover { color: var(--accent); }
+  .armor-slot .as-resist-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 6px;
+    margin-top: 4px; padding: 8px; background: var(--panel); border-radius: 7px;
+  }
+  .armor-slot .as-resist-grid.hidden { display: none; }
+  .armor-slot .as-resist-row {
+    display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim);
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .armor-slot .as-resist-row label { flex: 1; }
+  .armor-slot .as-resist-row input {
+    width: 42px; background: transparent; border: 1px solid var(--panel-edge); border-radius: 5px;
+    color: var(--text); font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px;
+    padding: 2px 4px; text-align: center; outline: none; -moz-appearance: textfield;
+  }
+  .armor-slot .as-resist-row input::-webkit-inner-spin-button, .armor-slot .as-resist-row input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .armor-slot .as-resist-row input:focus { border-color: var(--accent-2); }
+  .armor-slot .as-resist-row .pct { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Soulforge</h1>
+    <p>Forge thy champion · allot thy might</p>
+  </header>
+
+  <div class="roster" id="roster">
+    <span class="roster-label">Roster</span>
+    <span id="chips" style="display:contents;"></span>
+    <button class="chip-new" onclick="newCharacter()">+ New Character</button>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: stat allocation -->
+    <div class="panel">
+      <h2>Attributes</h2>
+      <p class="hint">Spend points to raise a stat (1–20). Each level up grants more points to spend.</p>
+
+      <div class="pool">
+        <span class="pool-label">Points Remaining</span>
+        <span class="pool-num" id="pool">10</span>
+      </div>
+
+      <div id="stats"></div>
+    </div>
+
+    <!-- RIGHT: identity + preview -->
+    <div class="panel">
+      <h2>Your Hero</h2>
+      <p class="hint">A live preview of who you're forging.</p>
+
+      <div class="id-fields">
+        <label>Name
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="text" id="name" value="Nameless One" style="flex:1;" />
+            <span id="tier-badge" class="tier-badge tier-house" title="Power tier">House</span>
+            <select id="tier" onchange="onTierChange()" style="width:auto;">
+              <option value="house">House</option>
+              <option value="block">Block</option>
+              <option value="city">City</option>
+              <option value="mountain">Mountain</option>
+              <option value="continental">Continental</option>
+              <option value="planetary">Planetary</option>
+            </select>
+          </div>
+        </label>
+        <label>Soul
+          <input type="text" id="technique" value="" placeholder="Name your soul" />
+        </label>
+        <label>Race
+          <input type="text" id="race" value="" placeholder="Your kind / lineage" />
+        </label>
+        <label>Clan
+          <input type="text" id="clan" value="" placeholder="House / bloodline" />
+        </label>
+        <label>Level
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="number" id="level" value="1" min="1" max="40" style="flex:1;" />
+            <button type="button" id="levelup-btn" onclick="levelUp()"
+              style="background:linear-gradient(90deg,var(--accent),var(--accent-2));color:var(--bg);border:none;border-radius:8px;padding:9px 14px;cursor:pointer;font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.06em;font-size:14px;white-space:nowrap;">
+              ▲ Level Up
+            </button>
+          </div>
+        </label>
+        <label>Points gained per level
+          <input type="number" id="per-level" value="10" min="0" max="20" step="1" />
+        </label>
+      </div>
+
+      <div class="vital">
+        <div class="vital-head"><span class="v-name">Health</span><span class="v-num" id="hp-num">—</span></div>
+        <div class="vbar hp"><span id="hp-fill"></span></div>
+        <div class="vital-controls">
+          <input type="number" id="hp-amt" value="5" min="0" step="1" />
+          <button class="dmg" onclick="changeVital('hp', -1)">Damage</button>
+          <button class="heal" onclick="changeVital('hp', 1)">Heal</button>
+          <button class="full" onclick="fullVital('hp')">Full</button>
+        </div>
+      </div>
+      <div class="vital">
+        <div class="vital-head"><span class="v-name">Energy</span><span class="v-num" id="en-num">—</span></div>
+        <div class="vbar en"><span id="en-fill"></span></div>
+        <div class="vital-controls">
+          <input type="number" id="en-amt" value="5" min="0" step="1" />
+          <button class="dmg" onclick="changeVital('en', -1)">Drain</button>
+          <button class="heal" onclick="changeVital('en', 1)">Restore</button>
+          <button class="full" onclick="fullVital('en')">Full</button>
+        </div>
+      </div>
+
+
+
+      <div class="archetype">
+        <div class="a-label">Emerging Archetype</div>
+        <div class="a-name" id="arch-name">—</div>
+        <div class="a-desc" id="arch-desc">Allocate points to reveal your path.</div>
+      </div>
+
+      <div class="inv-wrap">
+        <div class="inv-head">
+          <span class="inv-title">Inventory</span>
+          <button class="inv-add" onclick="addSlot()">+ Add slot</button>
+        </div>
+        <div class="inv-grid" id="inv-grid"></div>
+        <div id="weapon-mods-wrap"></div>
+      </div>
+
+      <div class="abil-wrap">
+        <div class="inv-head">
+          <span class="inv-title">Abilities</span>
+          <button class="inv-add" onclick="addAbility()">+ New ability</button>
+        </div>
+        <div id="abil-list"></div>
+      </div>
+
+      <div class="wallet-wrap">
+        <div class="inv-head">
+          <span class="inv-title">Wallet</span>
+          <button class="inv-add" onclick="resetWallet()" title="Reset to zero">↺ Reset</button>
+        </div>
+        <div class="wallet-total" id="wallet-total">
+          <span class="wt-piece"><b id="wt-gold">0</b><span class="wt-lbl gold">G</span></span>
+          <span class="wt-piece"><b id="wt-silver">0</b><span class="wt-lbl silver">S</span></span>
+          <span class="wt-piece"><b id="wt-copper">0</b><span class="wt-lbl copper">C</span></span>
+        </div>
+        <div class="wallet-controls">
+          <div class="wc-row">
+            <label>Gold <input type="number" id="w-in-gold" min="0" value="0" /></label>
+            <label>Silver <input type="number" id="w-in-silver" min="0" value="0" /></label>
+            <label>Copper <input type="number" id="w-in-copper" min="0" value="0" /></label>
+          </div>
+          <div class="wc-actions">
+            <button class="w-take" onclick="walletChange(-1)">− Take</button>
+            <button class="w-add primary" onclick="walletChange(1)">+ Add</button>
+          </div>
+          <div class="wc-quick">
+            <span class="wc-quick-lbl">Quick add:</span>
+            <button onclick="walletQuick(1,0,0)">+1G</button>
+            <button onclick="walletQuick(0,1,0)">+1S</button>
+            <button onclick="walletQuick(0,0,10)">+10C</button>
+            <button onclick="walletQuick(0,0,100)">+100C</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="armor-wrap">
+        <div class="inv-head">
+          <span class="inv-title">Armor</span>
+          <span class="armor-totals" id="armor-totals">— no armor equipped —</span>
+        </div>
+        <div class="armor-slots" id="armor-slots"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel combat-panel">
+    <h2>Combat</h2>
+    <p class="hint">Pick a die to roll for damage. Add a stat bonus and extra dice if you like.</p>
+
+    <div class="roll-config">
+      <label>Dice count
+        <input type="number" id="dice-count" value="1" min="1" max="20" step="1" />
+      </label>
+      <label>Stat bonus
+        <select id="dice-stat">
+          <option value="">None</option>
+        </select>
+      </label>
+      <label>Flat modifier
+        <input type="number" id="dice-mod" value="0" step="1" />
+      </label>
+      <label style="cursor:pointer;">
+        <input type="checkbox" id="dice-apply-hp" style="width:auto;cursor:pointer;" />
+        Subtract from HP
+      </label>
+    </div>
+
+    <div class="dice-row">
+      <button class="die-btn" onclick="rollDie(4)">d4</button>
+      <button class="die-btn" onclick="rollDie(6)">d6</button>
+      <button class="die-btn" onclick="rollDie(8)">d8</button>
+      <button class="die-btn" onclick="rollDie(10)">d10</button>
+      <button class="die-btn" onclick="rollDie(12)">d12</button>
+      <button class="die-btn" onclick="rollDie(20)">d20</button>
+    </div>
+
+    <div class="roll-result">
+      <div class="roll-label" id="roll-label">Roll the dice</div>
+      <div class="roll-total" id="roll-total">—</div>
+      <div class="roll-detail" id="roll-detail"></div>
+    </div>
+
+    <div class="wheel-section">
+      <div class="wheel-controls" style="justify-content:center; margin-bottom:14px;">
+        <label>Attacker
+          <select id="atk-sel" onchange="drawWheel()" style="margin-left:6px;"></select>
+        </label>
+        <label>Target
+          <select id="tgt-sel" onchange="drawWheel()" style="margin-left:6px;"></select>
+        </label>
+      </div>
+      <div class="wheel-controls" style="justify-content:center; margin-bottom:14px;">
+        <label>Damage die
+          <select id="dmg-die" style="margin-left:6px;">
+            <option value="4">d4</option>
+            <option value="6" selected>d6</option>
+            <option value="8">d8</option>
+            <option value="10">d10</option>
+            <option value="12">d12</option>
+            <option value="20">d20</option>
+          </select>
+        </label>
+        <span style="color:var(--text-dim);font-size:13px;">uses dice count &amp; flat modifier above</span>
+      </div>
+      <div class="wheel-controls" style="justify-content:center; margin-bottom:14px;">
+        <label>Attack stat
+          <select id="atk-stat" onchange="drawWheel()" style="margin-left:6px;"></select>
+        </label>
+        <label>Defense stat
+          <select id="def-stat" onchange="drawWheel()" style="margin-left:6px;"></select>
+        </label>
+        <label>Damage stat
+          <select id="dmg-stat" style="margin-left:6px;">
+            <option value="">None</option>
+          </select>
+        </label>
+        <label>Damage type
+          <select id="dmg-type" style="margin-left:6px;" onchange="drawWheel()">
+            <option value="piercing">Piercing</option>
+            <option value="slashing">Slashing</option>
+            <option value="bludgeoning">Bludgeoning</option>
+            <option value="fire">Fire</option>
+            <option value="cold">Cold</option>
+            <option value="poison">Poison</option>
+            <option value="bleeding">Bleeding</option>
+            <option value="psychic">Psychic</option>
+          </select>
+        </label>
+      </div>
+      <div class="wheel-row">
+        <div class="wheel-stage">
+          <div class="wheel-pointer"></div>
+          <svg id="wheel-svg" viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="wheel-info">
+          <div class="wi-label" id="wi-label">Hit chance</div>
+          <div class="wi-chance" id="wi-chance">—</div>
+          <div class="wi-outcome" id="wi-outcome">—</div>
+          <div class="wi-note" id="wi-note">Pick two combatants and spin.</div>
+          <div class="wheel-controls">
+            <button class="spin-btn" id="spin-btn" onclick="spinWheel()">⟳ Spin to attack</button>
+          </div>
+          <div class="wi-note" id="tgt-hp" style="margin-top:10px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel clans-panel">
+    <h2>Clans</h2>
+    <p class="hint">Each clan multiplies the stats of any character assigned to it. ×1 means no change; values like ×1.5 or ×0.8 reshape the build automatically.</p>
+    <div id="clans-list"></div>
+  </div>
+
+  <div class="actions">
+    <button onclick="randomBuild()">⚄ Random Build</button>
+    <button onclick="openWipe()">🌀 Wipe</button>
+    <button onclick="resetBuild()">↺ Reset</button>
+    <button onclick="deleteCurrent()" style="border-color: var(--hp); color: var(--hp);">✕ Delete Character</button>
+    <button class="primary" onclick="saveBuild()">⬇ Save Hero</button>
+  </div>
+  <div class="flash" id="flash">— hero saved —</div>
+
+  <div class="wipe-overlay" id="wipe-overlay" onclick="wipeOverlayClick(event)">
+    <div class="wipe-modal" onclick="event.stopPropagation()">
+      <h2>The Wheel of Fate</h2>
+      <p class="wipe-sub">Spin to discover this hero's soul and lineage.</p>
+      <div class="wipe-wheels">
+        <div class="wipe-wheel">
+          <div class="ww-label">Soul</div>
+          <div class="ww-stage">
+            <div class="ww-pointer"></div>
+            <svg id="soul-wheel" viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div class="ww-result" id="soul-result">—</div>
+          <div class="ww-edit">
+            <div class="ww-chips" id="soul-chips"></div>
+            <div class="ww-add">
+              <input type="text" id="soul-input" placeholder="Add a soul..." onkeydown="if(event.key==='Enter'){event.preventDefault();addWipeOption('soul');}" />
+              <button onclick="addWipeOption('soul')">+ Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="wipe-wheel">
+          <div class="ww-label">Race</div>
+          <div class="ww-stage">
+            <div class="ww-pointer"></div>
+            <svg id="race-wheel" viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div class="ww-result" id="race-result">—</div>
+          <div class="ww-edit">
+            <div class="ww-chips" id="race-chips"></div>
+            <div class="ww-add">
+              <input type="text" id="race-input" placeholder="Add a race..." onkeydown="if(event.key==='Enter'){event.preventDefault();addWipeOption('race');}" />
+              <button onclick="addWipeOption('race')">+ Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="wipe-wheel">
+          <div class="ww-label">Clan</div>
+          <div class="ww-stage">
+            <div class="ww-pointer"></div>
+            <svg id="clan-wheel" viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div class="ww-result" id="clan-result">—</div>
+          <div class="ww-edit">
+            <div class="ww-chips" id="clan-chips"></div>
+            <div class="ww-add">
+              <input type="text" id="clan-input" placeholder="Add a clan..." onkeydown="if(event.key==='Enter'){event.preventDefault();addWipeOption('clan');}" />
+              <button onclick="addWipeOption('clan')">+ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wipe-actions">
+        <button onclick="closeWipe()">Close</button>
+        <button id="wipe-spin-btn" class="primary" onclick="spinWipe()">⟳ Spin All</button>
+        <button id="wipe-use-btn" onclick="applyWipe()" disabled>Use Results</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wipe-overlay" id="hidden-overlay" onclick="hiddenOverlayClick(event)">
+    <div class="wipe-modal" onclick="event.stopPropagation()" style="max-width: 480px;">
+      <h2>Hidden Heroes</h2>
+      <p class="wipe-sub">Bring a hidden character back into the roster.</p>
+      <div class="hidden-list" id="hidden-list"></div>
+      <div class="wipe-actions" style="margin-top:18px;">
+        <button onclick="closeHidden()">Close</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STATS = [
+  { key:'wil', name:'Willpower',  blurb:'resolve & focus' },
+  { key:'str', name:'Strength',   blurb:'raw power' },
+  { key:'spd', name:'Speed',      blurb:'pace & reflex' },
+  { key:'for', name:'Fortitude',  blurb:'health & grit' },
+  { key:'enr', name:'Energy',     blurb:'stamina & output' },
+  { key:'sol', name:'Soul',       blurb:'spirit & essence' },
+];
+const MIN = 1, MAX = 20, BASE_POINTS = 10;
+// Total points = base allotment + points gained from leveling up
+const totalPoints = () => {
+  const lvl = parseInt(document.getElementById('level').value) || 1;
+  const per = parseInt(document.getElementById('per-level').value) || 0;
+  return BASE_POINTS + (lvl - 1) * per;
+};
+// Flat cost: 1 point per step above the floor
+const cost = v => v - MIN;
+
+let scores = {};
+STATS.forEach(s => scores[s.key] = 1);
+
+const mod = v => Math.floor((v - MIN) / 5);
+const fmt = n => (n >= 0 ? '+'+n : ''+n);
+const spent = () => STATS.reduce((sum,s) => sum + cost(scores[s.key]), 0);
+const remaining = () => totalPoints() - spent();
+
+let mults = {};
+STATS.forEach(s => mults[s.key] = 1);
+
+// Current HP/Energy (null = treat as full, will snap to max on first render)
+let curHP = null, curEN = null;
+// Cache of last-known maxes so we can detect changes
+let lastMaxHP = null, lastMaxEN = null;
+// Current maxes exposed for the damage/heal handlers
+let curMaxHP = 0, curMaxEN = 0;
+
+// Inventory: array of slots, each {name, qty} or null for empty
+let inventory = [];
+// Wallet: single copper total (1 gold = 10 silver = 1000 copper)
+let walletCopper = 0;
+
+// Armor: 4 slots. Each slot: { name, weight, defense, resist: {type: pct} } or null.
+const ARMOR_SLOTS = [
+  { key: 'head', label: 'Head' },
+  { key: 'body', label: 'Body' },
+  { key: 'arms', label: 'Arms' },
+  { key: 'legs', label: 'Legs' },
+];
+const DAMAGE_TYPES = [
+  { key: 'piercing',    label: 'Piercing' },
+  { key: 'slashing',    label: 'Slashing' },
+  { key: 'bludgeoning', label: 'Bludgeoning' },
+  { key: 'fire',        label: 'Fire' },
+  { key: 'cold',        label: 'Cold' },
+  { key: 'poison',      label: 'Poison' },
+  { key: 'bleeding',    label: 'Bleeding' },
+  { key: 'psychic',     label: 'Psychic' },
+];
+let armor = {};   // {head: null | {name, weight, defense, resist:{}}, ...}
+function blankArmor() {
+  const a = {};
+  ARMOR_SLOTS.forEach(s => { a[s.key] = null; });
+  return a;
+}
+// Effective defense (flat damage reduction) from all equipped pieces. Defense is stored
+// per-piece; legacy pieces without defense fall back to weight*2 to preserve behavior.
+function armorDmgReductionOf(c) {
+  const a = (c && c.id === activeId) ? armor : ((c && c.armor) || {});
+  let total = 0;
+  ARMOR_SLOTS.forEach(s => {
+    const p = a[s.key];
+    if (!p) return;
+    const def = (typeof p.defense === 'number') ? p.defense : Math.max(0, (p.weight||0)) * 2;
+    total += Math.max(0, def);
+  });
+  return total;
+}
+// Speed penalty = total weight minus floor(Strength / 2), min 0.
+function armorSpeedPenaltyOf(c) {
+  const a = (c && c.id === activeId) ? armor : ((c && c.armor) || {});
+  let totalW = 0;
+  ARMOR_SLOTS.forEach(s => {
+    const p = a[s.key];
+    if (p && typeof p.weight === 'number') totalW += Math.max(0, p.weight);
+  });
+  if (totalW === 0) return 0;
+  const str = charScore(c, 'str');
+  const cancel = Math.floor(str / 2);
+  return Math.max(0, totalW - cancel);
+}
+// Sum of resistance % from all equipped pieces for a damage type, capped at 90.
+function armorResistPctOf(c, typeKey) {
+  if (!typeKey) return 0;
+  const a = (c && c.id === activeId) ? armor : ((c && c.armor) || {});
+  let sum = 0;
+  ARMOR_SLOTS.forEach(s => {
+    const p = a[s.key];
+    if (p && p.resist && typeof p.resist[typeKey] === 'number') sum += p.resist[typeKey];
+  });
+  return Math.min(90, Math.max(0, sum));
+}
+// Full mitigation: percent resistance first, then flat defense. Returns { applied, resistPct, flatRed }.
+function mitigateDamage(raw, c, typeKey) {
+  const pct = armorResistPctOf(c, typeKey);
+  const flat = armorDmgReductionOf(c);
+  const afterPct = raw * (1 - pct / 100);
+  const afterFlat = Math.max(0, afterPct - flat);
+  return { applied: Math.round(afterFlat), resistPct: pct, flatRed: flat };
+}
+const DEFAULT_SLOTS = 8;
+function ensureSlots() {
+  if (!Array.isArray(inventory) || inventory.length === 0) {
+    inventory = Array(DEFAULT_SLOTS).fill(null);
+  }
+}
+
+// Abilities: per-character list of { id, name, mult, stats: {key:bool}, active }
+let abilities = [];
+function newAbility() {
+  const stats = {};
+  STATS.forEach(s => { stats[s.key] = false; });
+  return { id: 'a' + Date.now() + Math.floor(Math.random()*1000), name: 'New Ability', mult: 1, dmgMult: 1, stats, active: false };
+}
+function activeAbility() {
+  return abilities.find(a => a && a.active) || null;
+}
+// Multiplier from the active ability for a given stat (1.0 if no active ability or stat unchecked)
+function abilityMultFor(key) {
+  const a = activeAbility();
+  if (!a || !a.stats || !a.stats[key]) return 1;
+  const v = parseFloat(a.mult);
+  return (isFinite(v) && v > 0) ? v : 1;
+}
+
+// Same but reading from any character's stored or live abilities (for combat wheel).
+function abilityMultOf(c, key) {
+  if (!c) return 1;
+  const list = (c.id === activeId)
+    ? abilities
+    : (Array.isArray(c.abilities) ? c.abilities : []);
+  const a = list.find(x => x && x.active);
+  if (!a || !a.stats || !a.stats[key]) return 1;
+  const v = parseFloat(a.mult);
+  return (isFinite(v) && v > 0) ? v : 1;
+}
+
+// Damage multiplier from the active ability for the active (live) character. Scales the
+// whole roll, not just a stat bonus.
+function abilityDmgMult() {
+  const a = activeAbility();
+  if (!a) return 1;
+  const v = parseFloat(a.dmgMult);
+  return (isFinite(v) && v > 0) ? v : 1;
+}
+// Damage multiplier from any character's active ability (combat wheel attacker).
+function abilityDmgMultOf(c) {
+  if (!c) return 1;
+  const list = (c.id === activeId)
+    ? abilities
+    : (Array.isArray(c.abilities) ? c.abilities : []);
+  const a = list.find(x => x && x.active);
+  if (!a) return 1;
+  const v = parseFloat(a.dmgMult);
+  return (isFinite(v) && v > 0) ? v : 1;
+}
+
+// Every 5 points of TOTAL combined stats adds +0.3 to the damage-roll multiplier.
+// Base x1 at 0-4, then Total 5-9 -> x1.3, 10-14 -> x1.6, 15-19 -> x1.9, etc.
+function strengthDmgMult(c) {
+  let sum = 0;
+  STATS.forEach(s => { sum += charScore(c, s.key); });
+  const steps = Math.floor(sum / 5);
+  if (steps <= 0) return 1;
+  return 1 + steps * 0.3;
+}
+
+// Build stat rows
+const statsEl = document.getElementById('stats');
+STATS.forEach(s => {
+  const row = document.createElement('div');
+  row.className = 'stat';
+  row.innerHTML = `
+    <div class="stat-top">
+      <div class="stat-name">${s.name}<small>${s.blurb}</small></div>
+      <div class="stat-score" id="sc-${s.key}">1</div>
+      <div class="stat-mod" id="md-${s.key}">+0</div>
+      <div class="stepper">
+        <button id="dn-${s.key}" onclick="bump('${s.key}',-1)">−</button>
+        <button id="up-${s.key}" onclick="bump('${s.key}',1)">+</button>
+      </div>
+    </div>
+    <div class="stat-top" style="margin-top:6px;">
+      <div class="stat-mult">
+        <span class="x">×</span>
+        <input type="number" id="mu-${s.key}" value="1" readonly tabindex="-1" title="+1 every 5 points in this stat" />
+      </div>
+      <span style="color:var(--text-dim);font-size:13px;">effective</span>
+      <div class="stat-eff" id="ef-${s.key}" style="margin-left:auto;">1</div>
+    </div>
+    <div class="stat-bar"><span id="bar-${s.key}"></span></div>
+  `;
+  statsEl.appendChild(row);
+});
+
+function setMult(key, val) {
+  let v = parseFloat(val);
+  if (isNaN(v) || v < 0) v = 0;
+  mults[key] = v;
+  render();
+}
+
+function bump(key, dir) {
+  const next = scores[key] + dir;
+  if (next < MIN) return;
+  const delta = cost(next) - cost(scores[key]);
+  if (dir > 0 && delta > remaining()) return; // not enough points
+  scores[key] = next;
+  render();
+}
+
+function levelUp() {
+  const lvlEl = document.getElementById('level');
+  let lvl = parseInt(lvlEl.value) || 1;
+  if (lvl >= 40) { flashMsg('Max level reached'); return; }
+  lvl += 1;
+  lvlEl.value = lvl;
+  const per = parseInt(document.getElementById('per-level').value) || 0;
+  flashMsg('Level ' + lvl + '! +' + per + ' points to spend');
+  render();
+}
+
+function flashMsg(text) {
+  const f = document.getElementById('flash');
+  f.textContent = '— ' + text + ' —';
+  f.classList.add('show');
+  clearTimeout(flashMsg._t);
+  flashMsg._t = setTimeout(() => f.classList.remove('show'), 1900);
+}
+
+const TIER_LABELS = {
+  house: 'House', block: 'Block', city: 'City',
+  mountain: 'Mountain', continental: 'Continental', planetary: 'Planetary',
+};
+function updateTierBadge() {
+  const sel = document.getElementById('tier');
+  const badge = document.getElementById('tier-badge');
+  if (!sel || !badge) return;
+  const t = sel.value || 'house';
+  badge.className = 'tier-badge tier-' + t;
+  badge.textContent = TIER_LABELS[t] || 'House';
+}
+function onTierChange() {
+  updateTierBadge();
+  // mirror to active character so chip switching doesn't lose it
+  const c = roster.find(c => c.id === activeId);
+  if (c) c.tier = document.getElementById('tier').value || 'house';
+}
+
+// --- Wallet ---
+// 1 gold = 10 silver = 1000 copper (i.e. 1 silver = 100 copper).
+const COPPER_PER_SILVER = 100;
+const SILVER_PER_GOLD = 10;
+const COPPER_PER_GOLD = COPPER_PER_SILVER * SILVER_PER_GOLD;  // 1000
+
+function copperToParts(total) {
+  const t = Math.max(0, Math.floor(total || 0));
+  const g = Math.floor(t / COPPER_PER_GOLD);
+  const rem = t - g * COPPER_PER_GOLD;
+  const s = Math.floor(rem / COPPER_PER_SILVER);
+  const c = rem - s * COPPER_PER_SILVER;
+  return { g, s, c };
+}
+function partsToCopper(g, s, c) {
+  return Math.max(0, Math.floor(g||0)) * COPPER_PER_GOLD
+       + Math.max(0, Math.floor(s||0)) * COPPER_PER_SILVER
+       + Math.max(0, Math.floor(c||0));
+}
+function renderWallet() {
+  const p = copperToParts(walletCopper);
+  const gEl = document.getElementById('wt-gold');
+  const sEl = document.getElementById('wt-silver');
+  const cEl = document.getElementById('wt-copper');
+  if (gEl) gEl.textContent = p.g;
+  if (sEl) sEl.textContent = p.s;
+  if (cEl) cEl.textContent = p.c;
+}
+function walletChange(sign) {
+  const g = parseInt(document.getElementById('w-in-gold').value) || 0;
+  const s = parseInt(document.getElementById('w-in-silver').value) || 0;
+  const c = parseInt(document.getElementById('w-in-copper').value) || 0;
+  const delta = partsToCopper(g, s, c) * (sign > 0 ? 1 : -1);
+  if (delta === 0) return;
+  const next = walletCopper + delta;
+  if (next < 0) {
+    // Can't go below zero — clamp and let the user know.
+    walletCopper = 0;
+    flashMsg('not enough sheckles');
+  } else {
+    walletCopper = next;
+    flashMsg((sign > 0 ? '+' : '−') + formatSheckles(Math.abs(delta)));
+  }
+  // clear inputs
+  document.getElementById('w-in-gold').value = 0;
+  document.getElementById('w-in-silver').value = 0;
+  document.getElementById('w-in-copper').value = 0;
+  const ch = roster.find(c => c.id === activeId);
+  if (ch) ch.wallet = walletCopper;
+  persist();
+  renderWallet();
+}
+function walletQuick(g, s, c) {
+  walletCopper += partsToCopper(g, s, c);
+  const ch = roster.find(c => c.id === activeId);
+  if (ch) ch.wallet = walletCopper;
+  persist();
+  renderWallet();
+}
+function resetWallet() {
+  if (walletCopper === 0) return;
+  if (!confirm('Reset wallet to zero?')) return;
+  walletCopper = 0;
+  const ch = roster.find(c => c.id === activeId);
+  if (ch) ch.wallet = 0;
+  persist();
+  renderWallet();
+  flashMsg('wallet reset');
+}
+function formatSheckles(copperAmt) {
+  const p = copperToParts(copperAmt);
+  const bits = [];
+  if (p.g) bits.push(p.g + 'G');
+  if (p.s) bits.push(p.s + 'S');
+  if (p.c) bits.push(p.c + 'C');
+  return bits.length ? bits.join(' ') + ' sheckles' : '0 sheckles';
+}
+
+// --- Armor ---
+function ensureArmor() {
+  if (!armor || typeof armor !== 'object') armor = blankArmor();
+  ARMOR_SLOTS.forEach(s => { if (armor[s.key] === undefined) armor[s.key] = null; });
+}
+function armorSetName(slotKey, val) {
+  ensureArmor();
+  const name = String(val || '').trim();
+  if (!name) { armorClearSlot(slotKey, /*silent*/ true); return; }
+  if (!armor[slotKey]) armor[slotKey] = { name, weight: 1, defense: 2, resist: {} };
+  else armor[slotKey].name = name;
+  const c = roster.find(c => c.id === activeId); if (c) c.armor = armor;
+  persist();
+  updateArmorTotals();
+}
+function armorSetWeight(slotKey, val) {
+  ensureArmor();
+  const w = Math.max(0, Math.min(20, parseInt(val) || 0));
+  if (!armor[slotKey]) armor[slotKey] = { name: '', weight: w, defense: w * 2, resist: {} };
+  else armor[slotKey].weight = w;
+  const c = roster.find(c => c.id === activeId); if (c) c.armor = armor;
+  persist();
+  // Speed penalty changed -> re-render stats and the wheel
+  render();
+  drawWheel();
+  updateArmorTotals();
+  renderArmor();
+}
+function armorSetDefense(slotKey, val) {
+  ensureArmor();
+  const d = Math.max(0, Math.min(200, parseInt(val) || 0));
+  if (!armor[slotKey]) armor[slotKey] = { name: '', weight: 0, defense: d, resist: {} };
+  else armor[slotKey].defense = d;
+  const c = roster.find(c => c.id === activeId); if (c) c.armor = armor;
+  persist();
+  updateArmorTotals();
+  renderArmor();
+}
+function armorSetResist(slotKey, typeKey, val) {
+  ensureArmor();
+  if (!armor[slotKey]) armor[slotKey] = { name: '', weight: 0, defense: 0, resist: {} };
+  if (!armor[slotKey].resist) armor[slotKey].resist = {};
+  const p = Math.max(0, Math.min(90, parseInt(val) || 0));
+  armor[slotKey].resist[typeKey] = p;
+  const c = roster.find(c => c.id === activeId); if (c) c.armor = armor;
+  persist();
+  updateArmorTotals();
+}
+function armorClearSlot(slotKey, silent) {
+  ensureArmor();
+  armor[slotKey] = null;
+  const c = roster.find(c => c.id === activeId); if (c) c.armor = armor;
+  persist();
+  render();
+  drawWheel();
+  renderArmor();
+  if (!silent) flashMsg('armor removed');
+}
+function armorToggleResistPanel(slotKey) {
+  const el = document.getElementById('as-resist-' + slotKey);
+  const btn = document.getElementById('as-resist-toggle-' + slotKey);
+  if (!el || !btn) return;
+  const hidden = el.classList.contains('hidden');
+  if (hidden) { el.classList.remove('hidden'); btn.textContent = '▾ Resistances'; }
+  else        { el.classList.add('hidden'); btn.textContent = '▸ Resistances'; }
+}
+
+function renderArmor() {
+  ensureArmor();
+  const wrap = document.getElementById('armor-slots');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  ARMOR_SLOTS.forEach(s => {
+    const p = armor[s.key];
+    const slot = document.createElement('div');
+    slot.className = 'armor-slot' + (p && p.name ? ' equipped' : '');
+
+    const head = document.createElement('div');
+    head.className = 'as-head';
+    const slotLbl = document.createElement('span');
+    slotLbl.className = 'as-slot'; slotLbl.textContent = s.label;
+    head.appendChild(slotLbl);
+
+    const nm = document.createElement('input');
+    nm.type = 'text'; nm.className = 'as-name';
+    nm.placeholder = '(empty)';
+    nm.value = p ? (p.name || '') : '';
+    nm.oninput = () => armorSetName(s.key, nm.value);
+    head.appendChild(nm);
+
+    if (p && p.name) {
+      const clr = document.createElement('button');
+      clr.type = 'button'; clr.className = 'as-clear'; clr.textContent = '×'; clr.title = 'Remove armor';
+      clr.onclick = () => armorClearSlot(s.key);
+      head.appendChild(clr);
+    }
+    slot.appendChild(head);
+
+    const wtRow = document.createElement('div');
+    wtRow.className = 'as-weight';
+    const wtLbl = document.createElement('label'); wtLbl.textContent = 'WEIGHT';
+    const wtInp = document.createElement('input');
+    wtInp.type = 'number'; wtInp.min = '0'; wtInp.max = '20';
+    wtInp.value = p ? (p.weight || 0) : 0;
+    wtInp.oninput = () => armorSetWeight(s.key, wtInp.value);
+    wtRow.appendChild(wtLbl); wtRow.appendChild(wtInp);
+    slot.appendChild(wtRow);
+
+    const defRow = document.createElement('div');
+    defRow.className = 'as-defense';
+    const defLbl = document.createElement('label'); defLbl.textContent = 'DEFENSE';
+    const defInp = document.createElement('input');
+    defInp.type = 'number'; defInp.min = '0'; defInp.max = '200';
+    // Fall back to weight*2 for migration display purposes
+    const defVal = (p && typeof p.defense === 'number') ? p.defense : (p ? (p.weight || 0) * 2 : 0);
+    defInp.value = defVal;
+    defInp.oninput = () => armorSetDefense(s.key, defInp.value);
+    defRow.appendChild(defLbl); defRow.appendChild(defInp);
+    slot.appendChild(defRow);
+
+    const eff = document.createElement('div');
+    eff.className = 'as-effects';
+    const w = p ? (p.weight || 0) : 0;
+    const def = defVal;
+    if (w > 0 || def > 0) {
+      eff.innerHTML = '<span class="a-red">−' + def + ' dmg</span>  ·  <span class="a-pen">−' + w + ' Speed</span>';
+    } else {
+      eff.textContent = 'set weight & defense to define its effects';
+    }
+    slot.appendChild(eff);
+
+    // Resistances collapsible
+    const rt = document.createElement('button');
+    rt.type = 'button'; rt.className = 'as-resist-toggle';
+    rt.id = 'as-resist-toggle-' + s.key;
+    // Summary in the label
+    const resObj = (p && p.resist) ? p.resist : {};
+    const activeRes = Object.keys(resObj).filter(k => resObj[k] > 0);
+    const summary = activeRes.length
+      ? ' (' + activeRes.map(k => k + ' ' + resObj[k] + '%').join(', ') + ')'
+      : '';
+    rt.textContent = '▸ Resistances' + summary;
+    rt.onclick = () => armorToggleResistPanel(s.key);
+    slot.appendChild(rt);
+
+    const grid = document.createElement('div');
+    grid.className = 'as-resist-grid hidden';
+    grid.id = 'as-resist-' + s.key;
+    DAMAGE_TYPES.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'as-resist-row';
+      const lbl = document.createElement('label'); lbl.textContent = t.label;
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.min = '0'; inp.max = '90';
+      inp.value = (p && p.resist && typeof p.resist[t.key] === 'number') ? p.resist[t.key] : 0;
+      inp.oninput = () => armorSetResist(s.key, t.key, inp.value);
+      const pct = document.createElement('span'); pct.className = 'pct'; pct.textContent = '%';
+      row.appendChild(lbl); row.appendChild(inp); row.appendChild(pct);
+      grid.appendChild(row);
+    });
+    slot.appendChild(grid);
+
+    wrap.appendChild(slot);
+  });
+  updateArmorTotals();
+}
+
+function updateArmorTotals() {
+  const el = document.getElementById('armor-totals');
+  if (!el) return;
+  ensureArmor();
+  const c = roster.find(c => c.id === activeId);
+  const red = armorDmgReductionOf(c);
+  const pen = armorSpeedPenaltyOf(c);
+  if (red === 0 && pen === 0) {
+    el.textContent = '— no armor equipped —';
+  } else {
+    el.innerHTML = '<span class="a-t-hp">−<b>' + red + '</b> dmg</span>  ·  <span class="a-t-spd">−<b>' + pen + '</b> Speed</span>';
+  }
+}
+
+// Redraw only the HP/Energy numbers and bar widths (no max reconciliation)
+function drawVitals() {
+  curHP = Math.max(0, Math.min(curHP, curMaxHP));
+  curEN = Math.max(0, Math.min(curEN, curMaxEN));
+  document.getElementById('hp-num').textContent = Math.round(curHP) + ' / ' + curMaxHP;
+  document.getElementById('en-num').textContent = Math.round(curEN) + ' / ' + curMaxEN;
+  document.getElementById('hp-fill').style.width = (curMaxHP > 0 ? Math.min(100, curHP / curMaxHP * 100) : 0) + '%';
+  document.getElementById('en-fill').style.width = (curMaxEN > 0 ? Math.min(100, curEN / curMaxEN * 100) : 0) + '%';
+}
+
+// dir: -1 to subtract (damage/drain), +1 to add (heal/restore)
+function changeVital(which, dir) {
+  const amt = Math.abs(parseInt(document.getElementById(which + '-amt').value) || 0);
+  if (which === 'hp') curHP += dir * amt; else curEN += dir * amt;
+  drawVitals();
+}
+
+function fullVital(which) {
+  if (which === 'hp') curHP = curMaxHP; else curEN = curMaxEN;
+  drawVitals();
+}
+
+// Apply a damage number directly to current HP (used by the dice roller)
+function applyDamageToHP(dmg) {
+  curHP = Math.max(0, curHP - Math.abs(dmg));
+  drawVitals();
+}
+
+// --- Inventory ---
+function renderInventory() {
+  ensureSlots();
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  inventory.forEach((item, i) => {
+    const slot = document.createElement('div');
+    if (item && item.name) {
+      const cls = ['inv-slot', 'filled'];
+      if (item.weapon) cls.push('weapon');
+      if (item.equipped) cls.push('equipped');
+      slot.className = cls.join(' ');
+      const detail = item.weapon
+        ? ` — weapon +${item.diceCount || 1}d${item.diceSides || 6}`
+        : (item.qty > 1 ? ' ×' + item.qty : '');
+      slot.title = item.name + detail + ' — click to edit';
+
+      const nm = document.createElement('div');
+      nm.className = 'inv-name';
+      nm.textContent = item.name;
+      slot.appendChild(nm);
+
+      if (item.weapon) {
+        const d = document.createElement('div');
+        d.className = 'inv-dice';
+        d.textContent = '+' + (item.diceCount || 1) + 'd' + (item.diceSides || 6);
+        slot.appendChild(d);
+
+        const eq = document.createElement('button');
+        eq.type = 'button';
+        eq.className = 'equip-btn';
+        eq.textContent = item.equipped ? '✓ Equipped' : 'Equip';
+        eq.onclick = (e) => { e.preventDefault(); e.stopPropagation(); equipSlot(i); };
+        slot.appendChild(eq);
+      } else if (item.qty && item.qty > 1) {
+        const q = document.createElement('div');
+        q.className = 'inv-qty';
+        q.textContent = '×' + item.qty;
+        slot.appendChild(q);
+      }
+    } else {
+      slot.className = 'inv-slot empty';
+      slot.title = 'Click to add an item';
+    }
+    slot.onclick = () => editSlot(i);
+    grid.appendChild(slot);
+  });
+  if (typeof renderWeaponMods === 'function') renderWeaponMods();
+}
+
+function editSlot(i) {
+  ensureSlots();
+  const cur = inventory[i];
+  let name, qty, isWeapon, diceCount, diceSides;
+  if (cur && cur.name) {
+    name = prompt('Item name (leave blank to remove):', cur.name);
+    if (name === null) return;
+    if (name.trim() === '') {
+      // removing — if it was the equipped weapon, clear that flag implicitly
+      inventory[i] = null;
+      renderInventory();
+      return;
+    }
+    isWeapon = confirm('Is this a weapon? OK = yes (adds bonus dice on rolls), Cancel = no');
+    if (isWeapon) {
+      const dcStr = prompt('Bonus dice count (e.g. 1 for 1d6):', cur.diceCount || 1);
+      if (dcStr === null) return;
+      diceCount = Math.max(1, parseInt(dcStr) || 1);
+      const dsStr = prompt('Die size (4, 6, 8, 10, 12, or 20):', cur.diceSides || 6);
+      if (dsStr === null) return;
+      diceSides = parseInt(dsStr) || 6;
+      qty = 1;
+    } else {
+      const qtyStr = prompt('Quantity:', cur.qty || 1);
+      if (qtyStr === null) return;
+      qty = Math.max(1, parseInt(qtyStr) || 1);
+    }
+  } else {
+    name = prompt('Item name:');
+    if (name === null || name.trim() === '') return;
+    isWeapon = confirm('Is this a weapon? OK = yes (adds bonus dice on rolls), Cancel = no');
+    if (isWeapon) {
+      const dcStr = prompt('Bonus dice count (e.g. 1 for 1d6):', '1');
+      if (dcStr === null) return;
+      diceCount = Math.max(1, parseInt(dcStr) || 1);
+      const dsStr = prompt('Die size (4, 6, 8, 10, 12, or 20):', '6');
+      if (dsStr === null) return;
+      diceSides = parseInt(dsStr) || 6;
+      qty = 1;
+    } else {
+      const qtyStr = prompt('Quantity:', '1');
+      if (qtyStr === null) return;
+      qty = Math.max(1, parseInt(qtyStr) || 1);
+    }
+  }
+  const next = { name: name.trim(), qty };
+  if (isWeapon) {
+    next.weapon = true;
+    next.diceCount = diceCount;
+    next.diceSides = diceSides;
+    // preserve equipped flag if this slot was already the equipped weapon
+    if (cur && cur.equipped) next.equipped = true;
+  }
+  inventory[i] = next;
+  renderInventory();
+}
+
+function equipSlot(i) {
+  ensureSlots();
+  const cur = inventory[i];
+  if (!cur || !cur.weapon) return;
+  // toggle: if already equipped, unequip; otherwise equip this and unequip others
+  const wasEquipped = !!cur.equipped;
+  inventory.forEach(it => { if (it && it.equipped) it.equipped = false; });
+  if (!wasEquipped) cur.equipped = true;
+  renderInventory();
+}
+
+// Return the currently equipped weapon item, or null. Reads from a stored character
+// (for non-active combatants) or from the live inventory (for the active character).
+function equippedWeaponOf(c) {
+  if (!c) return null;
+  const list = (c.id === activeId)
+    ? inventory
+    : (Array.isArray(c.inventory) ? c.inventory : []);
+  for (let i = 0; i < list.length; i++) {
+    const it = list[i];
+    if (it && it.weapon && it.equipped) return it;
+  }
+  return null;
+}
+
+// Stat multiplier from a character's equipped weapon (1.0 if none / unset).
+function weaponMultOf(c, key) {
+  const w = equippedWeaponOf(c);
+  if (!w || !w.mods) return 1;
+  const v = w.mods[key];
+  return (typeof v === 'number' && v > 0) ? v : 1;
+}
+// Ensure a weapon item has a mods bag with every stat at 1.0.
+function ensureWeaponMods(weap) {
+  if (!weap) return;
+  if (!weap.mods) weap.mods = {};
+  STATS.forEach(s => {
+    if (typeof weap.mods[s.key] !== 'number') weap.mods[s.key] = 1;
+  });
+}
+// Find the equipped weapon's slot index in the live inventory (for editing).
+function equippedSlotIndex() {
+  for (let i = 0; i < inventory.length; i++) {
+    const it = inventory[i];
+    if (it && it.weapon && it.equipped) return i;
+  }
+  return -1;
+}
+function setWeaponMod(key, val) {
+  const i = equippedSlotIndex();
+  if (i < 0) return;
+  ensureWeaponMods(inventory[i]);
+  let v = parseFloat(val);
+  if (isNaN(v) || v < 0) v = 0;
+  inventory[i].mods[key] = v;
+  // refresh things that depend on it
+  render();
+  drawWheel();
+}
+function resetWeaponMods() {
+  const i = equippedSlotIndex();
+  if (i < 0) return;
+  inventory[i].mods = {};
+  ensureWeaponMods(inventory[i]);
+  renderWeaponMods();
+  render();
+  drawWheel();
+}
+
+// Render the multipliers panel for whichever weapon is currently equipped on the active char.
+function renderWeaponMods() {
+  const wrap = document.getElementById('weapon-mods-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const i = equippedSlotIndex();
+  if (i < 0) {
+    // Show a hint only if there are weapons but none equipped — quieter when no weapons exist at all.
+    const anyWeapon = inventory.some(it => it && it.weapon);
+    if (anyWeapon) {
+      const empty = document.createElement('div');
+      empty.className = 'weap-card';
+      empty.innerHTML = '<div class="weap-empty">Equip a weapon above to edit its stat multipliers.</div>';
+      wrap.appendChild(empty);
+    }
+    return;
+  }
+  const w = inventory[i];
+  ensureWeaponMods(w);
+
+  const card = document.createElement('div');
+  card.className = 'weap-card';
+  const head = document.createElement('div');
+  head.className = 'weap-card-head';
+  const sw = document.createElement('span');
+  sw.className = 'swords'; sw.textContent = '⚔';
+  head.appendChild(sw);
+  head.appendChild(document.createTextNode(' ' + (w.name || 'Weapon') + ' — multipliers'));
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'reset-mods';
+  reset.textContent = 'Reset to ×1';
+  reset.onclick = () => resetWeaponMods();
+  head.appendChild(reset);
+  card.appendChild(head);
+
+  const mods = document.createElement('div');
+  mods.className = 'clan-mods';      // reuse layout
+  STATS.forEach(s => {
+    const mod = document.createElement('div');
+    mod.className = 'clan-mod';
+    const lbl = document.createElement('span');
+    lbl.className = 'cm-name';
+    lbl.textContent = s.name;
+    const x = document.createElement('span');
+    x.className = 'cm-x';
+    x.textContent = '×';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = '0.1';
+    inp.min = '0';
+    inp.value = w.mods[s.key];
+    inp.oninput = () => setWeaponMod(s.key, inp.value);
+    mod.appendChild(lbl);
+    mod.appendChild(x);
+    mod.appendChild(inp);
+    mods.appendChild(mod);
+  });
+  card.appendChild(mods);
+  wrap.appendChild(card);
+}
+
+// Roll the equipped weapon's bonus dice for a character. Returns { sum, label } or null.
+function rollWeaponBonus(c) {
+  const w = equippedWeaponOf(c);
+  if (!w) return null;
+  const count = Math.max(1, parseInt(w.diceCount) || 1);
+  const sides = parseInt(w.diceSides) || 6;
+  let sum = 0;
+  for (let i = 0; i < count; i++) sum += 1 + Math.floor(Math.random() * sides);
+  return { sum, label: '+' + count + 'd' + sides + ' (' + w.name + ')' };
+}
+
+function addSlot() {
+  ensureSlots();
+  inventory.push(null);
+  renderInventory();
+}
+
+// --- Abilities ---
+function addAbility() {
+  abilities.push(newAbility());
+  renderAbilities();
+}
+function deleteAbility(id) {
+  const a = abilities.find(x => x.id === id);
+  if (!a) return;
+  if (!confirm('Delete ability "' + (a.name || 'Unnamed') + '"?')) return;
+  abilities = abilities.filter(x => x.id !== id);
+  renderAbilities();
+  render();
+  drawWheel();
+}
+function toggleAbilityActive(id) {
+  abilities.forEach(a => { if (a) a.active = (a.id === id ? !a.active : false); });
+  renderAbilities();
+  render();
+  drawWheel();
+}
+function setAbilityName(id, val) {
+  const a = abilities.find(x => x.id === id);
+  if (a) a.name = String(val || '');
+}
+function setAbilityMult(id, val) {
+  const a = abilities.find(x => x.id === id);
+  if (!a) return;
+  let v = parseFloat(val);
+  if (!isFinite(v) || v < 0) v = 0;
+  a.mult = v;
+  if (a.active) { render(); drawWheel(); }
+}
+function setAbilityDmgMult(id, val) {
+  const a = abilities.find(x => x.id === id);
+  if (!a) return;
+  let v = parseFloat(val);
+  if (!isFinite(v) || v < 0) v = 0;
+  a.dmgMult = v;
+  // damage mult doesn't change stats; no need to re-render the panel
+}
+function toggleAbilityStat(id, key) {
+  const a = abilities.find(x => x.id === id);
+  if (!a) return;
+  if (!a.stats) a.stats = {};
+  a.stats[key] = !a.stats[key];
+  renderAbilities();
+  if (a.active) { render(); drawWheel(); }
+}
+
+function renderAbilities() {
+  const wrap = document.getElementById('abil-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (!abilities || abilities.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'abil-empty';
+    empty.textContent = 'No abilities yet. Click "+ New ability" to create one.';
+    wrap.appendChild(empty);
+    return;
+  }
+  abilities.forEach(a => {
+    if (!a.stats) a.stats = {};
+    const card = document.createElement('div');
+    card.className = 'abil-card' + (a.active ? ' active' : '');
+
+    const head = document.createElement('div');
+    head.className = 'abil-head';
+
+    const nm = document.createElement('input');
+    nm.type = 'text';
+    nm.className = 'abil-name';
+    nm.value = a.name || '';
+    nm.placeholder = 'Ability name';
+    nm.oninput = () => setAbilityName(a.id, nm.value);
+    head.appendChild(nm);
+
+    const mw = document.createElement('span');
+    mw.className = 'abil-mult';
+    mw.title = 'Stat multiplier (applies to checked stats)';
+    const ml = document.createElement('span'); ml.className = 'abm-lbl'; ml.textContent = 'STAT';
+    const mx = document.createElement('span'); mx.className = 'abm-x'; mx.textContent = '×';
+    const mi = document.createElement('input');
+    mi.type = 'number'; mi.step = '0.1'; mi.min = '0'; mi.value = a.mult;
+    mi.oninput = () => setAbilityMult(a.id, mi.value);
+    mw.appendChild(ml); mw.appendChild(mx); mw.appendChild(mi);
+    head.appendChild(mw);
+
+    const dw = document.createElement('span');
+    dw.className = 'abil-mult';
+    dw.title = 'Damage multiplier (scales the entire damage roll on hit)';
+    const dl = document.createElement('span'); dl.className = 'abm-lbl'; dl.textContent = 'DMG';
+    const dx = document.createElement('span'); dx.className = 'abm-x'; dx.textContent = '×';
+    const di = document.createElement('input');
+    di.type = 'number'; di.step = '0.1'; di.min = '0'; di.value = (a.dmgMult != null ? a.dmgMult : 1);
+    di.oninput = () => setAbilityDmgMult(a.id, di.value);
+    dw.appendChild(dl); dw.appendChild(dx); dw.appendChild(di);
+    head.appendChild(dw);
+
+    const ab = document.createElement('button');
+    ab.type = 'button'; ab.className = 'abil-active-btn';
+    ab.textContent = a.active ? '✓ Active' : 'Activate';
+    ab.onclick = () => toggleAbilityActive(a.id);
+    head.appendChild(ab);
+
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'abil-del'; del.textContent = '×'; del.title = 'Delete ability';
+    del.onclick = () => deleteAbility(a.id);
+    head.appendChild(del);
+
+    card.appendChild(head);
+
+    const sts = document.createElement('div');
+    sts.className = 'abil-stats';
+    STATS.forEach(s => {
+      const lbl = document.createElement('label');
+      lbl.className = 'abil-stat' + (a.stats[s.key] ? ' checked' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!a.stats[s.key];
+      cb.onchange = () => toggleAbilityStat(a.id, s.key);
+      const nm2 = document.createElement('span');
+      nm2.textContent = s.name;
+      lbl.appendChild(cb); lbl.appendChild(nm2);
+      sts.appendChild(lbl);
+    });
+    card.appendChild(sts);
+
+    wrap.appendChild(card);
+  });
+}
+
+function archetype() {
+  const top = [...STATS].sort((a,b) => scores[b.key]-scores[a.key])[0];
+  const map = {
+    wil:['Unbroken','A will that refuses to bend or break.'],
+    str:['Juggernaut','A wall of muscle that breaks the front line.'],
+    spd:['Bladewind','Quick, lethal, gone before you blink.'],
+    for:['Ironhide','Endures everything the world throws at it.'],
+    enr:['Dynamo','A bottomless well of raw stamina.'],
+    sol:['Ascendant','Power that flows from the spirit itself.'],
+  };
+  return map[top.key];
+}
+
+function render() {
+  // pool
+  const rem = remaining();
+  const pool = document.getElementById('pool');
+  pool.textContent = rem + ' / ' + totalPoints();
+  pool.classList.toggle('empty', rem === 0);
+
+  let forMod = 0, spdMod = 0, totalMod = 0, primaryMod = 0, peak = MIN;
+  let forScore = MIN, enrScore = MIN;
+  STATS.forEach(s => {
+    const v = scores[s.key], m = mod(v);
+    document.getElementById('sc-'+s.key).textContent = v;
+    const md = document.getElementById('md-'+s.key);
+    md.textContent = fmt(m);
+    md.classList.toggle('neg', m < 0);
+    document.getElementById('bar-'+s.key).style.width = Math.min(100, ((v-MIN)/(MAX-MIN)*100)) + '%';
+    // multiplier auto-scales: x1 base + 1 per 5 points added to this stat past the floor.
+    // Clan + equipped-weapon + active-ability modifiers multiply on top.
+    // For Speed only: subtract the total armor Speed penalty from the "effective raw" first.
+    let effRaw = v;
+    if (s.key === 'spd') effRaw = Math.max(0, v - armorSpeedPenaltyOf(roster.find(c => c.id === activeId)));
+    const scoreMult = 1 + Math.floor((effRaw - MIN) / 5);
+    const clanName = (document.getElementById('clan') || {}).value || '';
+    const clanM = clanModFor(clanName, s.key);
+    const activeChar = roster.find(c => c.id === activeId);
+    const weapM = weaponMultOf(activeChar, s.key);
+    const abilM = abilityMultFor(s.key);
+    const mult = scoreMult * clanM * weapM * abilM;
+    mults[s.key] = mult;
+    const muEl = document.getElementById('mu-'+s.key);
+    if (muEl) muEl.value = (Math.round(mult * 100) / 100);
+    // effective value = score x multiplier (with clan factor)
+    const eff = effRaw * mult;
+    document.getElementById('ef-'+s.key).textContent = (Math.round(eff*10)/10).toString();
+    // disable buttons at limits / no points
+    document.getElementById('dn-'+s.key).disabled = (v <= MIN);
+    const nextCost = cost(v+1) - cost(v);
+    document.getElementById('up-'+s.key).disabled = (nextCost > rem);
+    if (s.key==='for') { forMod = m; forScore = v; }
+    if (s.key==='spd') spdMod = m;
+    if (s.key==='enr') enrScore = v;
+    totalMod += m;
+    if (v > peak) peak = v;
+  });
+
+  const lvl = parseInt(document.getElementById('level').value) || 1;
+  // Primary stat = the highest-scoring attribute, since the soul is freeform
+  const topStat = [...STATS].sort((a,b) => scores[b.key]-scores[a.key])[0];
+  primaryMod = mod(scores[topStat.key]);
+
+  // HP rises with the Fortitude stat; Energy rises with the Energy stat.
+  // Each point above the floor adds directly, so spending a point visibly moves the bar.
+  const maxHP = 20 + (forScore - MIN) * 30;
+  const maxEN = 10 + (enrScore - MIN) * 20;
+
+  // Reconcile current values when max changes (e.g. leveling or spending points).
+  // If current was full (or unset), keep it full; otherwise add the difference so a
+  // bigger max doesn't feel like sudden damage.
+  if (curHP === null) curHP = maxHP;
+  else if (lastMaxHP !== null && maxHP !== lastMaxHP) {
+    curHP = (curHP >= lastMaxHP) ? maxHP : curHP + (maxHP - lastMaxHP);
+  }
+  if (curEN === null) curEN = maxEN;
+  else if (lastMaxEN !== null && maxEN !== lastMaxEN) {
+    curEN = (curEN >= lastMaxEN) ? maxEN : curEN + (maxEN - lastMaxEN);
+  }
+  curHP = Math.max(0, Math.min(curHP, maxHP));
+  curEN = Math.max(0, Math.min(curEN, maxEN));
+  lastMaxHP = maxHP; lastMaxEN = maxEN;
+  curMaxHP = maxHP; curMaxEN = maxEN;
+
+  document.getElementById('hp-num').textContent = Math.round(curHP) + ' / ' + maxHP;
+  document.getElementById('en-num').textContent = Math.round(curEN) + ' / ' + maxEN;
+  document.getElementById('hp-fill').style.width = (maxHP > 0 ? Math.min(100, curHP / maxHP * 100) : 0) + '%';
+  document.getElementById('en-fill').style.width = (maxEN > 0 ? Math.min(100, curEN / maxEN * 100) : 0) + '%';
+
+  const [an, ad] = archetype();
+  document.getElementById('arch-name').textContent = an;
+  document.getElementById('arch-desc').textContent = ad;
+
+  drawWheel();
+}
+
+function randomBuild() {
+  STATS.forEach(s => scores[s.key] = MIN);
+  let guard = 0;
+  while (remaining() > 0 && guard++ < 500) {
+    const s = STATS[Math.floor(Math.random()*STATS.length)].key;
+    const next = scores[s] + 1;
+    if (next > MAX) continue;
+    if (cost(next)-cost(scores[s]) > remaining()) continue;
+    scores[s] = next;
+  }
+  render();
+}
+function resetBuild() {
+  STATS.forEach(s => scores[s.key] = MIN);
+  render();
+}
+
+const ROSTER_KEY = 'character-forge-roster-v1';
+let roster = [];      // [{ id, name, technique, level, scores }]
+let activeId = null;
+
+function uid() { return 'c' + Date.now() + Math.floor(Math.random()*1000); }
+
+function loadRoster() {
+  try {
+    const raw = localStorage.getItem(ROSTER_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      roster = data.roster || [];
+      activeId = data.activeId || (roster[0] && roster[0].id) || null;
+    }
+  } catch(e) { roster = []; }
+
+  if (roster.length === 0) {
+    const first = blankCharacter('Nameless One');
+    roster.push(first);
+    activeId = first.id;
+  }
+  if (!roster.find(c => c.id === activeId)) activeId = roster[0].id;
+  // ensure at least one visible character exists; if none, unhide the active one
+  if (!roster.some(c => !c.hidden)) {
+    const a = roster.find(c => c.id === activeId) || roster[0];
+    if (a) a.hidden = false;
+  }
+  // ensure active char is visible
+  const active = roster.find(c => c.id === activeId);
+  if (active && active.hidden) {
+    const firstVisible = roster.find(c => !c.hidden);
+    if (firstVisible) activeId = firstVisible.id;
+  }
+}
+
+function blankCharacter(name) {
+  const sc = {}, mu = {};
+  STATS.forEach(s => { sc[s.key] = MIN; mu[s.key] = 1; });
+  return { id: uid(), name: name || 'New Hero', tier: 'house', technique: '', race: '', clan: '', level: '1', perLevel: '10', hidden: false, wallet: 0, scores: sc, mults: mu, inventory: Array(DEFAULT_SLOTS).fill(null), abilities: [], armor: blankArmor() };
+}
+
+function persist() {
+  try {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify({ roster, activeId }));
+  } catch(e) { alert('Could not save: ' + e.message); }
+}
+
+// Pull the current form/state into the active roster entry
+function captureCurrent() {
+  const c = roster.find(c => c.id === activeId);
+  if (!c) return;
+  c.name = document.getElementById('name').value || 'Unnamed';
+  c.technique = document.getElementById('technique').value;
+  c.race = document.getElementById('race').value;
+  c.tier = (document.getElementById('tier') || {}).value || 'house';
+  c.clan = document.getElementById('clan').value;
+  c.level = document.getElementById('level').value;
+  c.perLevel = document.getElementById('per-level').value;
+  c.scores = Object.assign({}, scores);
+  c.mults = Object.assign({}, mults);
+  c.curHP = curHP;
+  c.curEN = curEN;
+  c.inventory = inventory.map(it => it ? Object.assign({}, it) : null);
+  c.abilities = abilities.map(a => ({
+    id: a.id, name: a.name, mult: a.mult, dmgMult: (a.dmgMult != null ? a.dmgMult : 1), active: !!a.active,
+    stats: Object.assign({}, a.stats || {}),
+  }));
+  c.wallet = Math.max(0, Math.floor(walletCopper || 0));
+  ensureArmor();
+  const capturedArmor = {};
+  ARMOR_SLOTS.forEach(s => {
+    const p = armor[s.key];
+    capturedArmor[s.key] = p ? {
+      name: p.name || '',
+      weight: Math.max(0, Math.min(20, parseInt(p.weight) || 0)),
+      defense: (typeof p.defense === 'number') ? Math.max(0, Math.min(200, p.defense)) : Math.max(0, Math.min(20, parseInt(p.weight) || 0)) * 2,
+      resist: (p.resist && typeof p.resist === 'object') ? Object.assign({}, p.resist) : {},
+    } : null;
+  });
+  c.armor = capturedArmor;
+}
+
+// Push a roster entry into the form/state
+function applyCharacter(c) {
+  STATS.forEach(s => {
+    scores[s.key] = (c.scores && c.scores[s.key] != null) ? c.scores[s.key] : MIN;
+    mults[s.key] = (c.mults && c.mults[s.key] != null) ? c.mults[s.key] : 1;
+    const muEl = document.getElementById('mu-'+s.key);
+    if (muEl) muEl.value = mults[s.key];
+  });
+  document.getElementById('name').value = c.name || '';
+  document.getElementById('technique').value = c.technique || '';
+  document.getElementById('race').value = c.race || '';
+  document.getElementById('tier').value = c.tier || 'house';
+  if (typeof updateTierBadge === 'function') updateTierBadge();
+  document.getElementById('clan').value = c.clan || '';
+  document.getElementById('level').value = c.level || '1';
+  document.getElementById('per-level').value = (c.perLevel != null ? c.perLevel : '10');
+  // restore this character's current vitals (null = will snap to full on render)
+  curHP = (c.curHP != null) ? c.curHP : null;
+  curEN = (c.curEN != null) ? c.curEN : null;
+  lastMaxHP = null; lastMaxEN = null;  // don't carry reconciliation across characters
+  inventory = (Array.isArray(c.inventory) && c.inventory.length)
+    ? c.inventory.map(it => it ? Object.assign({}, it) : null)
+    : Array(DEFAULT_SLOTS).fill(null);
+  abilities = Array.isArray(c.abilities)
+    ? c.abilities.map(a => ({
+        id: a.id || ('a' + Date.now() + Math.floor(Math.random()*1000)),
+        name: a.name || '',
+        mult: (typeof a.mult === 'number') ? a.mult : parseFloat(a.mult) || 1,
+        dmgMult: (typeof a.dmgMult === 'number') ? a.dmgMult : (parseFloat(a.dmgMult) || 1),
+        active: !!a.active,
+        stats: Object.assign({}, a.stats || {}),
+      }))
+    : [];
+  walletCopper = Math.max(0, Math.floor(c.wallet || 0));
+  // restore armor (or start blank)
+  const src = (c.armor && typeof c.armor === 'object') ? c.armor : null;
+  armor = blankArmor();
+  if (src) {
+    ARMOR_SLOTS.forEach(s => {
+      const p = src[s.key];
+      if (p && typeof p === 'object') {
+        const w = Math.max(0, Math.min(20, parseInt(p.weight) || 0));
+        const d = (typeof p.defense === 'number') ? Math.max(0, Math.min(200, p.defense)) : w * 2;
+        const r = (p.resist && typeof p.resist === 'object') ? Object.assign({}, p.resist) : {};
+        armor[s.key] = { name: p.name || '', weight: w, defense: d, resist: r };
+      }
+    });
+  }
+  renderInventory();
+  if (typeof renderAbilities === 'function') renderAbilities();
+  if (typeof renderClans === 'function') renderClans();
+  if (typeof renderWallet === 'function') renderWallet();
+  if (typeof renderArmor === 'function') renderArmor();
+}
+
+function switchTo(id) {
+  captureCurrent();          // keep edits to the one we're leaving (in-memory)
+  activeId = id;
+  const c = roster.find(c => c.id === id);
+  if (c) applyCharacter(c);
+  renderRoster();
+  render();
+}
+
+function newCharacter() {
+  captureCurrent();
+  const c = blankCharacter('New Hero');
+  roster.push(c);
+  activeId = c.id;
+  applyCharacter(c);
+  persist();
+  renderRoster();
+  render();
+}
+
+function deleteCharacter(id, ev) {
+  if (ev) ev.stopPropagation();
+  if (roster.length === 1) { alert('You need at least one character.'); return; }
+  const c = roster.find(c => c.id === id);
+  if (!confirm('Delete "' + (c ? c.name : 'this hero') + '"?')) return;
+  roster = roster.filter(c => c.id !== id);
+  if (activeId === id) {
+    activeId = roster[0].id;
+    applyCharacter(roster[0]);
+  }
+  persist();
+  renderRoster();
+  render();
+}
+
+function deleteCurrent() {
+  deleteCharacter(activeId, null);
+}
+
+function hideCharacter(id) {
+  const c = roster.find(c => c.id === id);
+  if (!c) return;
+  const visibleCount = roster.filter(c => !c.hidden).length;
+  if (visibleCount <= 1) { alert('You need at least one visible character.'); return; }
+  // if hiding the active char, switch to the next visible one first
+  if (id === activeId) {
+    const next = roster.find(c => !c.hidden && c.id !== id);
+    if (!next) { alert('You need at least one visible character.'); return; }
+    captureCurrent();
+    activeId = next.id;
+    applyCharacter(next);
+  }
+  c.hidden = true;
+  persist();
+  renderRoster();
+  render();
+}
+
+function unhideCharacter(id) {
+  const c = roster.find(c => c.id === id);
+  if (!c) return;
+  c.hidden = false;
+  persist();
+  renderRoster();
+  renderHiddenList();
+  // if the hidden popup is now empty, close it
+  if (roster.every(c => !c.hidden)) closeHidden();
+}
+
+function openHidden() {
+  renderHiddenList();
+  document.getElementById('hidden-overlay').classList.add('open');
+}
+function closeHidden() {
+  document.getElementById('hidden-overlay').classList.remove('open');
+}
+function hiddenOverlayClick(e) {
+  if (e.target.id === 'hidden-overlay') closeHidden();
+}
+function renderHiddenList() {
+  const wrap = document.getElementById('hidden-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const hidden = roster.filter(c => c.hidden);
+  if (hidden.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'hidden-empty';
+    empty.textContent = 'No hidden characters.';
+    wrap.appendChild(empty);
+    return;
+  }
+  hidden.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'hidden-row';
+    const nm = document.createElement('div');
+    nm.className = 'h-name';
+    nm.textContent = c.name || 'Unnamed';
+    const meta = document.createElement('div');
+    meta.className = 'h-meta';
+    const bits = [];
+    if (c.clan) bits.push(c.clan);
+    if (c.race) bits.push(c.race);
+    if (c.level) bits.push('Lv ' + c.level);
+    meta.textContent = bits.join(' · ');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Show';
+    btn.onclick = () => unhideCharacter(c.id);
+    row.appendChild(nm);
+    row.appendChild(meta);
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  });
+}
+
+function renderRoster() {
+  const chips = document.getElementById('chips');
+  chips.innerHTML = '';
+  const visible = roster.filter(c => !c.hidden);
+  visible.forEach(c => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (c.id === activeId ? ' active' : '');
+    chip.onclick = () => switchTo(c.id);
+    const label = document.createElement('span');
+    label.textContent = c.name || 'Unnamed';
+
+    const hide = document.createElement('button');
+    hide.type = 'button';
+    hide.className = 'chip-hide';
+    hide.textContent = '◐';
+    hide.title = 'Hide this character';
+    hide.onclick = (e) => { e.preventDefault(); e.stopPropagation(); hideCharacter(c.id); };
+
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'chip-x';
+    x.textContent = '×';
+    x.title = 'Delete this character';
+    x.onclick = (e) => { e.preventDefault(); e.stopPropagation(); deleteCharacter(c.id, e); };
+
+    chip.appendChild(label);
+    chip.appendChild(hide);
+    chip.appendChild(x);
+    chips.appendChild(chip);
+  });
+
+  // Manage-hidden link
+  const hiddenCount = roster.length - visible.length;
+  if (hiddenCount > 0) {
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.className = 'hidden-link';
+    link.textContent = hiddenCount + ' hidden — manage';
+    link.onclick = openHidden;
+    chips.appendChild(link);
+  }
+
+  populateCombatants();
+  drawWheel();
+}
+
+function saveBuild() {
+  captureCurrent();
+  persist();
+  renderRoster();   // reflect any name change on the chip
+  flashMsg('hero saved');
+}
+
+document.getElementById('technique').addEventListener('input', render);
+document.getElementById('clan').addEventListener('input', () => { render(); renderClans(); });
+document.getElementById('level').addEventListener('input', render);
+document.getElementById('per-level').addEventListener('input', render);
+// Live-update the active chip label as you type the name
+document.getElementById('name').addEventListener('input', () => {
+  const c = roster.find(c => c.id === activeId);
+  if (c) { c.name = document.getElementById('name').value || 'Unnamed'; renderRoster(); }
+});
+
+// --- Combat dice roller ---
+(function populateDiceStats() {
+  const sel = document.getElementById('dice-stat');
+  STATS.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.key;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+})();
+
+function rollDie(sides) {
+  const count = Math.max(1, Math.min(20, parseInt(document.getElementById('dice-count').value) || 1));
+  const flat = parseInt(document.getElementById('dice-mod').value) || 0;
+  const statKey = document.getElementById('dice-stat').value;
+  // Clan + equipped-weapon + active-ability modifiers multiply the stat bonus.
+  const activeClan = (document.getElementById('clan') || {}).value || '';
+  const activeCharForDice = roster.find(c => c.id === activeId);
+  const clanMult = statKey ? clanModFor(activeClan, statKey) : 1;
+  const weapMult = statKey ? weaponMultOf(activeCharForDice, statKey) : 1;
+  const abilMult = statKey ? abilityMultFor(statKey) : 1;
+  const statBonus = statKey ? Math.round(mod(scores[statKey]) * clanMult * weapMult * abilMult) : 0;
+
+  const rolls = [];
+  for (let i = 0; i < count; i++) rolls.push(1 + Math.floor(Math.random() * sides));
+  const diceSum = rolls.reduce((a, b) => a + b, 0);
+  // equipped weapon's bonus dice (active character)
+  const activeChar = roster.find(c => c.id === activeId);
+  const weap = rollWeaponBonus(activeChar);
+  const weaponBonus = weap ? weap.sum : 0;
+  const preTotal = diceSum + flat + statBonus + weaponBonus;
+  const dmgX = abilityDmgMult();
+  const strX = strengthDmgMult(activeChar);
+  const combinedX = dmgX * strX;
+  const total = (combinedX !== 1) ? Math.round(preTotal * combinedX) : preTotal;
+  lastRollTotal = total;
+
+  // build a readable breakdown
+  let detail = count + 'd' + sides + ' (' + rolls.join(' + ') + ')';
+  if (statBonus) {
+    const sName = STATS.find(s => s.key === statKey).name;
+    detail += (statBonus >= 0 ? ' + ' : ' − ') + Math.abs(statBonus) + ' ' + sName;
+  }
+  if (flat) detail += (flat >= 0 ? ' + ' : ' − ') + Math.abs(flat);
+  if (weap) detail += ' + ' + weap.sum + ' ' + weap.label;
+  if (dmgX !== 1) detail += '   ×' + dmgX + ' (ability)';
+  if (strX !== 1) detail += '   ×' + (Math.round(strX * 1000) / 1000) + ' (Total)';
+
+  const totalEl = document.getElementById('roll-total');
+  const labelEl = document.getElementById('roll-label');
+  const detailEl = document.getElementById('roll-detail');
+
+  totalEl.textContent = total;
+  detailEl.textContent = detail + ' = ' + total + ' damage';
+  labelEl.textContent = count + 'd' + sides + ' rolled';
+
+  // optionally apply the damage to current HP
+  const applyHP = document.getElementById('dice-apply-hp');
+  if (applyHP && applyHP.checked && total > 0) {
+    const activeCharForArmor = roster.find(c => c.id === activeId);
+    const typeSel = document.getElementById('dmg-type');
+    const dmgType = typeSel ? (typeSel.value || 'piercing') : 'piercing';
+    const typeLabel = (DAMAGE_TYPES.find(d => d.key === dmgType) || {}).label || dmgType;
+    const mit = mitigateDamage(total, activeCharForArmor, dmgType);
+    if (mit.applied > 0) applyDamageToHP(mit.applied);
+    const resStr = mit.resistPct > 0 ? '   ×' + (Math.round((1 - mit.resistPct/100) * 100) / 100) + ' (' + mit.resistPct + '% ' + typeLabel + ' resist)' : '';
+    const armorStr = mit.flatRed > 0 ? '   −' + mit.flatRed + ' (armor)' : '';
+    detailEl.textContent = detail + ' [' + typeLabel + ']' + resStr + armorStr + ' = ' + mit.applied + ' damage  →  HP ' + Math.round(curHP) + '/' + curMaxHP;
+  }
+
+  // crit / fumble flavor on a single d20
+  totalEl.classList.remove('crit', 'fumble');
+  if (count === 1 && sides === 20 && rolls[0] === 20) { totalEl.classList.add('crit'); labelEl.textContent = 'Critical hit!'; }
+  else if (count === 1 && sides === 20 && rolls[0] === 1) { totalEl.classList.add('fumble'); labelEl.textContent = 'Fumble!'; }
+
+  // little pop animation
+  totalEl.classList.remove('pop');
+  void totalEl.offsetWidth;
+  totalEl.classList.add('pop');
+  setTimeout(() => totalEl.classList.remove('pop'), 130);
+}
+
+// --- Hit wheel: attacker vs target ---
+let lastRollTotal = 0;
+let wheelAngle = 0;        // accumulated rotation
+let wheelSpinning = false;
+
+// Read a roster character's stored stat score (falls back to live state for the active char).
+function charScore(c, key) {
+  if (!c) return MIN;
+  if (c.id === activeId) return scores[key];           // live, possibly-unsaved value
+  return (c.scores && c.scores[key] != null) ? c.scores[key] : MIN;
+}
+function charMaxHP(c) {
+  return 20 + (charScore(c, 'for') - MIN) * 30;
+}
+// Current HP for a character: live for the active one, stored otherwise (null = full).
+function charCurHP(c) {
+  if (!c) return 0;
+  if (c.id === activeId) return curHP != null ? curHP : charMaxHP(c);
+  return (c.curHP != null) ? c.curHP : charMaxHP(c);
+}
+function setCharCurHP(c, val) {
+  const v = Math.max(0, Math.min(val, charMaxHP(c)));
+  if (c.id === activeId) { curHP = v; drawVitals(); }
+  c.curHP = v;
+}
+function charClan(c) {
+  if (!c) return '';
+  if (c.id === activeId) {
+    const el = document.getElementById('clan');
+    return el ? (el.value || '') : (c.clan || '');
+  }
+  return c.clan || '';
+}
+
+function getAttacker() { return roster.find(c => c.id === document.getElementById('atk-sel').value) || roster[0]; }
+function getTarget()   { return roster.find(c => c.id === document.getElementById('tgt-sel').value) || roster[0]; }
+
+function populateCombatants() {
+  const atk = document.getElementById('atk-sel');
+  const tgt = document.getElementById('tgt-sel');
+  if (!atk || !tgt) return;
+  const prevA = atk.value, prevT = tgt.value;
+  [atk, tgt].forEach(sel => { sel.innerHTML = ''; });
+  const pool = roster.filter(c => !c.hidden);
+  pool.forEach(c => {
+    [atk, tgt].forEach(sel => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.name || 'Unnamed';
+      sel.appendChild(o);
+    });
+  });
+  // restore selections, defaulting attacker=active, target=someone else
+  atk.value = pool.find(c => c.id === prevA) ? prevA
+    : (pool.find(c => c.id === activeId) ? activeId : (pool[0] && pool[0].id) || '');
+  let defT = prevT;
+  if (!pool.find(c => c.id === defT) || defT === atk.value) {
+    const other = pool.find(c => c.id !== atk.value);
+    defT = other ? other.id : atk.value;
+  }
+  tgt.value = defT;
+}
+
+// Hit chance from attacker Speed vs target Speed (dodge). Base 50% + 4% per point of
+// Speed advantage, clamped to 5–95%.
+function getAtkStatKey() {
+  const el = document.getElementById('atk-stat');
+  return (el && el.value) ? el.value : 'spd';
+}
+function getDefStatKey() {
+  const el = document.getElementById('def-stat');
+  return (el && el.value) ? el.value : 'spd';
+}
+function getDmgStatKey() {
+  const el = document.getElementById('dmg-stat');
+  return (el && el.value) ? el.value : '';
+}
+
+function populateStatPickers() {
+  const atk = document.getElementById('atk-stat');
+  const def = document.getElementById('def-stat');
+  const dmg = document.getElementById('dmg-stat');
+  if (!atk || !def || !dmg) return;
+  // attack/defense pickers (no "none" option)
+  [atk, def].forEach(sel => {
+    sel.innerHTML = '';
+    STATS.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.key; o.textContent = s.name;
+      sel.appendChild(o);
+    });
+  });
+  // damage stat picker keeps a "none" option
+  dmg.innerHTML = '';
+  const none = document.createElement('option');
+  none.value = ''; none.textContent = 'None';
+  dmg.appendChild(none);
+  STATS.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.key; o.textContent = s.name;
+    dmg.appendChild(o);
+  });
+  // defaults: Speed for attack/defense, none for damage
+  atk.value = 'spd'; def.value = 'spd'; dmg.value = '';
+}
+
+// Effective value: score x multiplier (+1 per 5 points). Used for hit-chance math.
+function statMult(score) { return 1 + Math.floor((score - MIN) / 5); }
+function effectiveStat(c, key) {
+  let s = charScore(c, key);
+  if (key === 'spd') s = Math.max(0, s - armorSpeedPenaltyOf(c));
+  const clanM = clanModFor(charClan(c), key);
+  const weapM = weaponMultOf(c, key);
+  const abilM = abilityMultOf(c, key);
+  return s * statMult(s) * clanM * weapM * abilM;
+}
+
+// Proportional odds. Each combatant's territory on the wheel is their share of the
+// combined effective stat pool. Hit chance = attacker's share of 360°.
+//
+//   atkDeg = atkEff / (atkEff + defEff) * 360
+//   pct    = atkDeg / 3.6
+function hitOdds() {
+  const a = getAttacker(), t = getTarget();
+  const aKey = getAtkStatKey(), dKey = getDefStatKey();
+  const atkEff = effectiveStat(a, aKey);
+  const defEff = effectiveStat(t, dKey);
+  const pool = atkEff + defEff;
+  if (pool <= 0) {
+    // both at zero — neutral 50/50 split rather than dividing by zero
+    return { pct: 50, atkDeg: 180, defDeg: 180, atkEff, defEff };
+  }
+  const atkDeg = (atkEff / pool) * 360;
+  const defDeg = 360 - atkDeg;
+  return { pct: atkDeg / 3.6, atkDeg, defDeg, atkEff, defEff };
+}
+
+// Back-compat shim: anything that called hitChance() still gets the percent.
+function hitChance() { return Math.round(hitOdds().pct); }
+
+function polar(cx, cy, r, deg) {
+  const a = (deg - 90) * Math.PI / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+function arcPath(cx, cy, r, startDeg, endDeg) {
+  const [sx, sy] = polar(cx, cy, r, endDeg);
+  const [ex, ey] = polar(cx, cy, r, startDeg);
+  const large = (endDeg - startDeg) <= 180 ? 0 : 1;
+  return `M ${cx} ${cy} L ${sx} ${sy} A ${r} ${r} 0 ${large} 0 ${ex} ${ey} Z`;
+}
+
+function drawWheel() {
+  const svg = document.getElementById('wheel-svg');
+  if (!svg) return;
+  const odds = hitOdds();
+  const pct = odds.pct;
+  // show both % and the degree split
+  document.getElementById('wi-chance').textContent =
+    pct.toFixed(1) + '%  ·  ' + Math.round(odds.atkDeg) + '° / ' + Math.round(odds.defDeg) + '°';
+  // dynamic label showing which stats are contested
+  const lbl = document.getElementById('wi-label');
+  if (lbl) {
+    const aS = STATS.find(s => s.key === getAtkStatKey());
+    const dS = STATS.find(s => s.key === getDefStatKey());
+    lbl.textContent = 'Hit chance — ' + (aS ? aS.name : '?') + ' vs ' + (dS ? dS.name : '?')
+      + '  (eff ' + odds.atkEff + ' vs ' + odds.defEff + ')';
+  }
+  const hitDeg = odds.atkDeg;
+  const cx = 100, cy = 100, r = 96;
+
+  // edge cases where one side has the full wheel — a single full path won't render
+  // (start == end), so draw a solid filled circle instead.
+  if (hitDeg >= 360 - 0.001) {
+    svg.innerHTML =
+      `<circle cx="100" cy="100" r="98" fill="none" stroke="#b89a63" stroke-width="3"/>` +
+      `<circle cx="100" cy="100" r="96" fill="#4c6b1f"/>` +
+      `<text x="100" y="100" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="14" fill="#f3e6c8" transform="translate(0 -58)">HIT</text>` +
+      `<circle cx="100" cy="100" r="10" fill="#f3e6c8" stroke="#b89a63" stroke-width="2"/>`;
+  } else if (hitDeg <= 0.001) {
+    svg.innerHTML =
+      `<circle cx="100" cy="100" r="98" fill="none" stroke="#b89a63" stroke-width="3"/>` +
+      `<circle cx="100" cy="100" r="96" fill="#8a2017"/>` +
+      `<text x="100" y="100" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="14" fill="#f3e6c8" transform="translate(0 -58)">MISS</text>` +
+      `<circle cx="100" cy="100" r="10" fill="#f3e6c8" stroke="#b89a63" stroke-width="2"/>`;
+  } else {
+    const hit = arcPath(cx, cy, r, 0, hitDeg);
+    const miss = arcPath(cx, cy, r, hitDeg, 360);
+    svg.innerHTML =
+      `<circle cx="100" cy="100" r="98" fill="none" stroke="#b89a63" stroke-width="3"/>` +
+      `<path d="${hit}" fill="#4c6b1f"/>` +
+      `<path d="${miss}" fill="#8a2017"/>` +
+      `<text x="100" y="100" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="13" fill="#f3e6c8" transform="rotate(${hitDeg/2} 100 100) translate(0 -58)">HIT</text>` +
+      `<text x="100" y="100" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="13" fill="#f3e6c8" transform="rotate(${hitDeg + (360-hitDeg)/2} 100 100) translate(0 -58)">MISS</text>` +
+      `<circle cx="100" cy="100" r="10" fill="#f3e6c8" stroke="#b89a63" stroke-width="2"/>`;
+  }
+  // show target's current HP
+  const t = getTarget();
+  const hpEl = document.getElementById('tgt-hp');
+  if (hpEl && t) hpEl.textContent = (t.name || 'Target') + ': ' + Math.round(charCurHP(t)) + ' / ' + charMaxHP(t) + ' HP';
+}
+
+// Roll fresh damage from the current dice settings (uses the selected die count + mods).
+function rollDamage() {
+  const count = Math.max(1, Math.min(20, parseInt(document.getElementById('dice-count').value) || 1));
+  const flat = parseInt(document.getElementById('dice-mod').value) || 0;
+  const sidesSel = parseInt(document.getElementById('dmg-die') ? document.getElementById('dmg-die').value : 6) || 6;
+  let sum = 0;
+  for (let i = 0; i < count; i++) sum += 1 + Math.floor(Math.random() * sidesSel);
+  // attacker's damage-stat bonus, scaled by clan + weapon + active ability
+  const dmgKey = getDmgStatKey();
+  const a = getAttacker();
+  const clanMult = dmgKey ? clanModFor(charClan(a), dmgKey) : 1;
+  const weapMult = dmgKey ? weaponMultOf(a, dmgKey) : 1;
+  const abilMult = dmgKey ? abilityMultOf(a, dmgKey) : 1;
+  const statBonus = dmgKey ? Math.round(mod(charScore(a, dmgKey)) * clanMult * weapMult * abilMult) : 0;
+  const dmgStat = dmgKey ? STATS.find(s => s.key === dmgKey) : null;
+  // attacker's equipped weapon adds its bonus dice
+  const weap = rollWeaponBonus(a);
+  const weaponBonus = weap ? weap.sum : 0;
+  const preTotal = sum + flat + statBonus + weaponBonus;
+  const dmgX = abilityDmgMultOf(a);
+  const strX = strengthDmgMult(a);
+  const combinedX = dmgX * strX;
+  const total = (combinedX !== 1) ? Math.round(preTotal * combinedX) : preTotal;
+  const typeSel = document.getElementById('dmg-type');
+  const dmgType = typeSel ? (typeSel.value || 'piercing') : 'piercing';
+  const typeLabel = (DAMAGE_TYPES.find(d => d.key === dmgType) || {}).label || dmgType;
+  return {
+    total: Math.max(0, total),
+    count, sides: sidesSel, flat, statBonus,
+    statName: dmgStat ? dmgStat.name : null,
+    weaponLabel: weap ? weap.label : null,
+    weaponBonus,
+    abilityDmgMult: dmgX,
+    strDmgMult: strX,
+    dmgType, typeLabel,
+  };
+}
+
+function spinWheel() {
+  if (wheelSpinning) return;
+  const a = getAttacker(), t = getTarget();
+  if (a && t && a.id === t.id) {
+    document.getElementById('wi-note').textContent = 'Pick two different combatants.';
+    return;
+  }
+  const svg = document.getElementById('wheel-svg');
+  const btn = document.getElementById('spin-btn');
+  const outEl = document.getElementById('wi-outcome');
+  const noteEl = document.getElementById('wi-note');
+  const odds = hitOdds();
+  const hitDeg = odds.atkDeg;
+
+  let isHit;
+  if (hitDeg >= 360 - 0.001) isHit = true;          // attacker owns the whole wheel
+  else if (hitDeg <= 0.001) isHit = false;           // defender owns the whole wheel
+  else isHit = Math.random() * 100 < odds.pct;
+  // pick a landing angle inside the chosen slice (avoid the very edges)
+  let targetSliceCenter;
+  if (isHit) {
+    targetSliceCenter = hitDeg / 2;
+  } else {
+    targetSliceCenter = hitDeg + (360 - hitDeg) / 2;
+  }
+  const baseFinal = (360 - targetSliceCenter) % 360;
+  const spins = 4;
+  const current = ((wheelAngle % 360) + 360) % 360;
+  const delta = (baseFinal - current + 360) % 360;
+  wheelAngle += spins * 360 + delta;
+
+  wheelSpinning = true;
+  btn.disabled = true;
+  outEl.className = 'wi-outcome';
+  outEl.textContent = '';
+  noteEl.textContent = (a.name || 'Attacker') + ' strikes at ' + (t.name || 'target') + '...';
+  svg.style.transform = 'rotate(' + wheelAngle + 'deg)';
+
+  setTimeout(() => {
+    wheelSpinning = false;
+    btn.disabled = false;
+    if (isHit) {
+      outEl.className = 'wi-outcome hit';
+      outEl.textContent = 'HIT!';
+      const dmg = rollDamage();
+      const before = charCurHP(t);
+      // Target's armor: percent resistance first, then flat defense.
+      const mit = mitigateDamage(dmg.total, t, dmg.dmgType);
+      const applied = mit.applied;
+      setCharCurHP(t, before - applied);
+      persist();
+      const flatStr = dmg.flat ? (dmg.flat > 0 ? '+' + dmg.flat : String(dmg.flat)) : '';
+      const statStr = dmg.statBonus ? ((dmg.statBonus > 0 ? '+' : '') + dmg.statBonus + ' ' + dmg.statName) : '';
+      const weapStr = dmg.weaponLabel ? ' + ' + dmg.weaponBonus + ' ' + dmg.weaponLabel : '';
+      const abilStr = (dmg.abilityDmgMult && dmg.abilityDmgMult !== 1) ? '  ×' + dmg.abilityDmgMult + ' (ability)' : '';
+      const strXStr = (dmg.strDmgMult && dmg.strDmgMult !== 1) ? '  ×' + (Math.round(dmg.strDmgMult * 1000) / 1000) + ' (Total)' : '';
+      const resStr = mit.resistPct > 0 ? '  ×' + (Math.round((1 - mit.resistPct/100) * 100) / 100) + ' (' + mit.resistPct + '% ' + dmg.typeLabel + ' resist)' : '';
+      const armorStr = mit.flatRed > 0 ? '  −' + mit.flatRed + ' (armor)' : '';
+      const typeStr = ' [' + dmg.typeLabel + ']';
+      const breakdown = dmg.count + 'd' + dmg.sides + flatStr + (statStr ? ' ' + statStr : '') + weapStr + abilStr + strXStr + typeStr + resStr + armorStr;
+      noteEl.textContent = (t.name || 'Target') + ' takes ' + applied + ' (' + breakdown + ') → ' +
+        Math.round(charCurHP(t)) + '/' + charMaxHP(t) + ' HP';
+      drawWheel();
+    } else {
+      outEl.className = 'wi-outcome miss';
+      outEl.textContent = 'MISS';
+      noteEl.textContent = (t.name || 'Target') + ' dodges the blow!';
+    }
+  }, 3700);
+}
+
+// --- Wipe wheels (Soul + Race) ---
+// Edit these arrays to set your own options.
+// Default options (used the first time, before custom lists are saved)
+const SOUL_DEFAULTS = ['Limitless', 'Ember', 'Void', 'Verdant', 'Storm', 'Wraith', 'Tide', 'Iron'];
+const RACE_DEFAULTS = ['Human', 'Elf', 'Dwarf', 'Orc', 'Halfling', 'Tiefling', 'Dragonborn', 'Gnome'];
+const CLAN_DEFAULTS = ['Ironwood', 'Stormwatch', 'Ashenhall', 'Goldleaf', 'Blackvein', 'Hollowmoor', 'Sunspear', 'Nightreach'];
+const WIPE_LISTS_KEY = 'character-forge-wipe-lists-v1';
+
+let SOUL_OPTIONS = SOUL_DEFAULTS.slice();
+let RACE_OPTIONS = RACE_DEFAULTS.slice();
+let CLAN_OPTIONS = CLAN_DEFAULTS.slice();
+
+// Per-clan stat multipliers: { [clanName]: { stat_key: number } }. Missing entries = 1.0
+let CLAN_MODS = {};
+
+function clanModFor(name, key) {
+  if (!name || !CLAN_MODS[name]) return 1;
+  const v = CLAN_MODS[name][key];
+  return (typeof v === 'number' && v > 0) ? v : 1;
+}
+function ensureClanMods(name) {
+  if (!name) return;
+  if (!CLAN_MODS[name]) CLAN_MODS[name] = {};
+  STATS.forEach(s => {
+    if (typeof CLAN_MODS[name][s.key] !== 'number') CLAN_MODS[name][s.key] = 1;
+  });
+}
+
+function loadWipeLists() {
+  try {
+    const raw = localStorage.getItem(WIPE_LISTS_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (Array.isArray(d.soul)) SOUL_OPTIONS = d.soul.slice();
+    if (Array.isArray(d.race)) RACE_OPTIONS = d.race.slice();
+    if (Array.isArray(d.clan)) CLAN_OPTIONS = d.clan.slice();
+    if (d.clanMods && typeof d.clanMods === 'object') CLAN_MODS = d.clanMods;
+  } catch(e) { /* ignore */ }
+  // make sure every current clan has an entry
+  CLAN_OPTIONS.forEach(ensureClanMods);
+}
+function saveWipeLists() {
+  try {
+    localStorage.setItem(WIPE_LISTS_KEY, JSON.stringify({
+      soul: SOUL_OPTIONS, race: RACE_OPTIONS, clan: CLAN_OPTIONS, clanMods: CLAN_MODS
+    }));
+  } catch(e) { /* ignore */ }
+}
+
+function renderClans() {
+  const wrap = document.getElementById('clans-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  // Only show the current character's clan
+  const c = roster.find(c => c.id === activeId);
+  const liveClanInput = document.getElementById('clan');
+  const name = (liveClanInput ? liveClanInput.value : (c ? c.clan : '') || '').trim();
+
+  if (!name) {
+    const empty = document.createElement('div');
+    empty.className = 'clans-empty';
+    empty.textContent = 'This hero has no clan. Set one above (or spin the Wipe wheel) to edit its modifiers.';
+    wrap.appendChild(empty);
+    return;
+  }
+
+  ensureClanMods(name);
+  // If this clan was typed manually and isn't yet in the shared list, add it so it
+  // shows up in the wipe wheel too and persists.
+  if (CLAN_OPTIONS.indexOf(name) === -1) {
+    CLAN_OPTIONS.push(name);
+    saveWipeLists();
+  }
+
+  const card = document.createElement('div');
+  card.className = 'clan-card';
+  const head = document.createElement('div');
+  head.className = 'clan-card-head';
+  head.appendChild(document.createTextNode(name));
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'reset-mods';
+  reset.textContent = 'Reset to ×1';
+  reset.onclick = () => resetClanMods(name);
+  head.appendChild(reset);
+  card.appendChild(head);
+
+  const mods = document.createElement('div');
+  mods.className = 'clan-mods';
+  STATS.forEach(s => {
+    const mod = document.createElement('div');
+    mod.className = 'clan-mod';
+    const lbl = document.createElement('span');
+    lbl.className = 'cm-name';
+    lbl.textContent = s.name;
+    const x = document.createElement('span');
+    x.className = 'cm-x';
+    x.textContent = '×';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = '0.1';
+    inp.min = '0';
+    inp.value = CLAN_MODS[name][s.key];
+    inp.oninput = () => setClanMod(name, s.key, inp.value);
+    mod.appendChild(lbl);
+    mod.appendChild(x);
+    mod.appendChild(inp);
+    mods.appendChild(mod);
+  });
+  card.appendChild(mods);
+  wrap.appendChild(card);
+}
+
+function setClanMod(name, key, val) {
+  ensureClanMods(name);
+  let v = parseFloat(val);
+  if (isNaN(v) || v < 0) v = 0;
+  CLAN_MODS[name][key] = v;
+  saveWipeLists();
+  // refresh anything that depends on the modifier
+  render();
+  drawWheel();
+}
+
+function resetClanMods(name) {
+  CLAN_MODS[name] = {};
+  ensureClanMods(name);
+  saveWipeLists();
+  renderClans();
+  render();
+  drawWheel();
+}
+function wipeListFor(which) {
+  if (which === 'soul') return SOUL_OPTIONS;
+  if (which === 'race') return RACE_OPTIONS;
+  if (which === 'clan') return CLAN_OPTIONS;
+  return null;
+}
+function wipeReady() {
+  return SOUL_OPTIONS.length > 0 && RACE_OPTIONS.length > 0 && CLAN_OPTIONS.length > 0;
+}
+
+function renderWipeChips(which) {
+  const list = wipeListFor(which);
+  const wrap = document.getElementById(which + '-chips');
+  if (!list || !wrap) return;
+  wrap.innerHTML = '';
+  list.forEach((opt, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'ww-chip';
+    chip.textContent = opt;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = '×';
+    x.title = 'Remove';
+    x.onclick = () => removeWipeOption(which, i);
+    chip.appendChild(x);
+    wrap.appendChild(chip);
+  });
+}
+
+function addWipeOption(which) {
+  const input = document.getElementById(which + '-input');
+  const list = wipeListFor(which);
+  if (!input || !list) return;
+  const val = (input.value || '').trim();
+  if (!val) return;
+  if (list.some(o => o.toLowerCase() === val.toLowerCase())) { input.value = ''; return; }
+  list.push(val);
+  if (which === 'clan') ensureClanMods(val);
+  input.value = '';
+  saveWipeLists();
+  renderWipeChips(which);
+  drawWipeWheel(which + '-wheel', list);
+  if (which === 'clan') renderClans();
+  const spinBtn = document.getElementById('wipe-spin-btn');
+  if (spinBtn) spinBtn.disabled = !wipeReady();
+}
+
+function removeWipeOption(which, i) {
+  const list = wipeListFor(which);
+  if (!list || i < 0 || i >= list.length) return;
+  const removed = list[i];
+  list.splice(i, 1);
+  if (which === 'clan' && removed && CLAN_MODS[removed]) delete CLAN_MODS[removed];
+  saveWipeLists();
+  renderWipeChips(which);
+  drawWipeWheel(which + '-wheel', list);
+  if (which === 'clan') renderClans();
+  const spinBtn = document.getElementById('wipe-spin-btn');
+  if (spinBtn) spinBtn.disabled = !wipeReady();
+}
+
+// Per-wheel rotation state
+let wipeSoulAngle = 0, wipeRaceAngle = 0, wipeClanAngle = 0, wipeSpinning = false;
+let pickedSoul = null, pickedRace = null, pickedClan = null;
+// Distinct warm/medieval colors cycled across segments
+const WIPE_COLORS = ['#7a1f15', '#a07a2b', '#4c6b1f', '#8a2017', '#6b5230', '#b8851f', '#9c4a16', '#4d3a1a'];
+
+function drawWipeWheel(svgId, options) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const cx = 100, cy = 100, r = 96;
+  const n = options.length;
+  if (n === 0) { svg.innerHTML = ''; return; }
+  const seg = 360 / n;
+  let paths = `<circle cx="100" cy="100" r="98" fill="none" stroke="#b89a63" stroke-width="3"/>`;
+  let labels = '';
+  for (let i = 0; i < n; i++) {
+    const start = i * seg, end = (i + 1) * seg;
+    const [sx, sy] = polar(cx, cy, r, end);
+    const [ex, ey] = polar(cx, cy, r, start);
+    const large = seg <= 180 ? 0 : 1;
+    paths += `<path d="M ${cx} ${cy} L ${sx} ${sy} A ${r} ${r} 0 ${large} 0 ${ex} ${ey} Z" fill="${WIPE_COLORS[i % WIPE_COLORS.length]}"/>`;
+    const mid = start + seg / 2;
+    // shrink long labels so they fit
+    const lbl = options[i].length > 10 ? options[i].slice(0, 9) + '…' : options[i];
+    const fontSize = n > 10 ? 9 : n > 6 ? 11 : 12;
+    labels += `<text x="100" y="100" text-anchor="middle" font-family="Cinzel, serif" font-weight="700" font-size="${fontSize}" fill="#f3e6c8" transform="rotate(${mid} 100 100) translate(0 -62)">${lbl}</text>`;
+  }
+  svg.innerHTML = paths + labels +
+    `<circle cx="100" cy="100" r="10" fill="#f3e6c8" stroke="#b89a63" stroke-width="2"/>`;
+}
+
+// Pick a random segment, compute target rotation so its center lands under the top pointer.
+function rotateWheelTo(svg, currentAngle, options, pickedIndex) {
+  const n = options.length;
+  const seg = 360 / n;
+  const center = pickedIndex * seg + seg / 2;     // center degree of chosen slice
+  const baseFinal = (360 - center) % 360;
+  const spins = 4;
+  const cur = ((currentAngle % 360) + 360) % 360;
+  const delta = (baseFinal - cur + 360) % 360;
+  const newAngle = currentAngle + spins * 360 + delta;
+  svg.style.transform = 'rotate(' + newAngle + 'deg)';
+  return newAngle;
+}
+
+function openWipe() {
+  loadWipeLists();
+  drawWipeWheel('soul-wheel', SOUL_OPTIONS);
+  drawWipeWheel('race-wheel', RACE_OPTIONS);
+  drawWipeWheel('clan-wheel', CLAN_OPTIONS);
+  renderWipeChips('soul');
+  renderWipeChips('race');
+  renderWipeChips('clan');
+  pickedSoul = null; pickedRace = null; pickedClan = null;
+  document.getElementById('soul-result').textContent = '—';
+  document.getElementById('race-result').textContent = '—';
+  document.getElementById('clan-result').textContent = '—';
+  document.getElementById('wipe-use-btn').disabled = true;
+  document.getElementById('wipe-spin-btn').disabled = !wipeReady();
+  document.getElementById('wipe-overlay').classList.add('open');
+}
+function closeWipe() {
+  document.getElementById('wipe-overlay').classList.remove('open');
+}
+function wipeOverlayClick(e) {
+  // clicking the dim backdrop closes; the modal stops propagation in its own handler
+  if (e.target.id === 'wipe-overlay') closeWipe();
+}
+
+function spinWipe() {
+  if (wipeSpinning) return;
+  if (!wipeReady()) return;
+  wipeSpinning = true;
+  document.getElementById('wipe-spin-btn').disabled = true;
+  document.getElementById('wipe-use-btn').disabled = true;
+
+  const soulIdx = Math.floor(Math.random() * SOUL_OPTIONS.length);
+  const raceIdx = Math.floor(Math.random() * RACE_OPTIONS.length);
+  const clanIdx = Math.floor(Math.random() * CLAN_OPTIONS.length);
+  pickedSoul = SOUL_OPTIONS[soulIdx];
+  pickedRace = RACE_OPTIONS[raceIdx];
+  pickedClan = CLAN_OPTIONS[clanIdx];
+
+  wipeSoulAngle = rotateWheelTo(document.getElementById('soul-wheel'), wipeSoulAngle, SOUL_OPTIONS, soulIdx);
+  wipeRaceAngle = rotateWheelTo(document.getElementById('race-wheel'), wipeRaceAngle, RACE_OPTIONS, raceIdx);
+  wipeClanAngle = rotateWheelTo(document.getElementById('clan-wheel'), wipeClanAngle, CLAN_OPTIONS, clanIdx);
+
+  setTimeout(() => {
+    wipeSpinning = false;
+    document.getElementById('wipe-spin-btn').disabled = false;
+    document.getElementById('wipe-use-btn').disabled = false;
+    document.getElementById('soul-result').textContent = pickedSoul;
+    document.getElementById('race-result').textContent = pickedRace;
+    document.getElementById('clan-result').textContent = pickedClan;
+  }, 3700);
+}
+
+function applyWipe() {
+  if (!pickedSoul || !pickedRace || !pickedClan) return;
+  document.getElementById('technique').value = pickedSoul;
+  document.getElementById('race').value = pickedRace;
+  document.getElementById('clan').value = pickedClan;
+  const c = roster.find(c => c.id === activeId);
+  if (c) { c.technique = pickedSoul; c.race = pickedRace; c.clan = pickedClan; }
+  closeWipe();
+  flashMsg('Soul, Race & Clan set');
+  render();
+  renderClans();
+}
+
+loadRoster();
+loadWipeLists();
+renderClans();
+applyCharacter(roster.find(c => c.id === activeId) || roster[0]);
+populateStatPickers();
+renderRoster();
+render();
+</script>
+</body>
+</html>
